@@ -8,6 +8,8 @@ DC = Sys.Date()
 
 library(stringr)
 library(lubridate)
+library(dplyr)
+library(ggplot2)
 
 # PURPOSE ####
 
@@ -109,7 +111,7 @@ ggplot(dataSoundscapeT, aes(x = dateTime, y = as.factor(ASi) , fill = `125`) ) +
 #spectra of acoustic scenes
 # as.data.frame(colnames(dataSoundscapeT))
 spllab = dataSoundscapeT[,c(1,49, 19:46)]
-spllab = data.frame(spllab, stringsAsFactors = F)
+   spllab = data.frame(spllab, stringsAsFactors = F)
 nms = colnames( spllab) [3:30]
 NvMO = reshape :: melt(spllab, id.vars = c("dateTime","ASi"), measure.vars =  nms)
 NvMO$FQ = as.numeric(as.character(gsub("X","",NvMO$variable)))
