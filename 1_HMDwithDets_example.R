@@ -15,3 +15,29 @@
 # axiom help with data integration- no just visualization + data products
 # show example of wind and what I needed do to get to this
 
+# Directory with daily HMD files #### 
+inFile = choose.files()
+inData = read.csv(inFile)
+pr = sapply(strsplit(basename( inFile ), "_"), "[[", 1)
+st = sapply(strsplit(basename( inFile ), "_"), "[[", 2)
+dy = as.Date ( gsub(".csv","", sapply(strsplit(basename( inFile ), "_"), "[[", 6)
+                    ), format="%Y%m%d" )
+
+cat("Processing... ",st," on " ,as.character( dy) )
+
+# dim(inData) # so many rows b/c 1 Hz bins
+
+#some formatting because not netDCF 
+# truncate to 100-2000 Hz
+fq = as.numeric(as.character( gsub("PSD_","", colnames(inData[2:ncol(inData)] )) ) ) 
+st = which(fq == 100) +1 
+ed = which(fq == 2000) +1 
+inDataT = as.data.frame( inData[,c(1,st:ed)] )
+
+#format the date
+inDataT$TimeStamp = as.POSIXct( gsub(".000Z", "", gsub("T", " ", inDataT$yyyy.mm.ddTHH.MM.SSZ)), tz = "GMT" )
+rm(ed,st,inFile,inData)
+
+# Directory with daily HMD files #### 
+inDir= choose.dir() #all detections
+list.dirs(inDir)
