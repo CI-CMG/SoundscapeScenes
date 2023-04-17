@@ -3,6 +3,8 @@
 
 rm(list=ls()) 
 
+library(data.table)
+
 # Label with specific predefined acoustic scene categories
 # See AK labels
 # low-frequency- 100- 500 Hz (Kait is 500 Hz, so limiting, why not 1 or 2 kHz)
@@ -18,7 +20,7 @@ rm(list=ls())
 
 # HMD DATA ####
 # read in, formate, truncate data
-## (option 1) HMD files (csv format) ####
+## (option 1) HMD files (csv format, output of Manta) ####
 inDir = choose.dir(default = "F:\\SanctSound\\AcousticScene_1min" , caption = "directory with HMD csv files" ) # HI04_02
 inFiles= list.files(inDir, pattern = ".csv", full.names = T)
 ii = 2
@@ -30,38 +32,42 @@ dy = as.Date ( gsub (".csv","", sapply(strsplit(basename( inFile ), "_"), "[[", 
 cat("Processing... ",st," on " ,as.character( dy), "[", ii, " of ", length(inFiles),"]" )
 colnames(inHMDcsv)[1] = "dateTime"
 inHMDcsv$dateTime = as.POSIXct(   inHMDcsv$dateTime, format = "%d-%b-%Y %H:%M:%S" , tz = "GMT" ) # Date format: format the date (? will netCDF files be the same?)
-
 fq = as.numeric(as.character( gsub("X","", colnames(inHMDcsv[3:ncol(inHMDcsv)] )) ) ) # Frequency range: truncate to 100-2000 Hz
 st = which(fq == 100)+2      #  colnames(inHMDcsv)[st]
 ed = which(fq == 1997.6) +2  #  colnames(inHMDcsv)[ed]
 inHMDdata = as.data.frame( inHMDcsv[, c(1, st:ed )] )
 fq = as.numeric(as.character( gsub("X","", colnames(inHMDdata[2:ncol(inHMDdata)] )) ) ) # Frequency range: truncate to 100-2000 Hz
-rm(ed,st)
+rm(ed,st,inHMDcsv,ii,dy)
 
 
-## (option 2) PSD files (csv format) #### 
-inDir = choose.dir(default = "F:\\SanctSound\\AcousticScene_1min" , caption = "directory with PSD csv files" ) # CI03_04
-inFiles= list.files(inDir, pattern = "PSD", full.names = T)
-ii = 2
-inFile = inFiles[ii]
-str(inFile)
-#read first row
-inPSDcsv = read.csv(inFile,usecols= 1)
+## (option 2) PSD files (csv format, output of Triton Soundscape Metrics) #### 
+inDir   = choose.dir(default = "F:\\SanctSound\\AcousticScene_1min" , caption = "directory with PSD csv files" ) # CI03_04
+inFiles = list.files(inDir, pattern = "PSD", full.names = T)
+ii = 1
+inFile = inFiles[ii] 
+#x = read.csv(inFile) # these files are HUGE, how can I read in one day at a time??? read in date column only and parse file as such
+
+
+#x = round( as.numeric(as.character( ( gsub("PSD_", "", fread(inFile, nrow = 1, skip = 0) )  ) ) ), digits = 1) #read in header
+#st = which.min(abs(x-100))       #x[st]
+#ed = which.min(abs(x-2000))      #x[ed]
 
 inHMDcsv$TimeStamp = as.POSIXct( gsub(".000Z", "", gsub("T", " ", inHMDcsv$yyyy.mm.ddTHH.MM.SSZ)), tz = "GMT" )
-# Frequency range: truncate to 100-2000 Hz
-fq = as.numeric(as.character( gsub("PSD_","", colnames(inData[2:ncol(inData)] )) ) ) 
+fq = as.numeric(as.character( gsub("PSD_","", colnames(inData[2:ncol(inData)] )) ) ) # Frequency range: truncate to 100-2000 Hz
 st = which(fq == 100) +1 
 ed = which(fq == 2000) +1 
 inDataT = as.data.frame( inData[,c(1,st:ed)] )
 rm(ed,st,inFile,inData)
 
-## (option 3) HMD files (netCDF format) #### 
+## (option 3) HMD files (netCDF format, output of Manta) #### 
 
 
 
-# detection files #### 
+# DETECTIONS #### 
 inDir= choose.dir() #all detections
 list.dirs(inDir)
-## FORMATTING ####
+
+
+
+# PLOT OF LABELED DATA #### 
  
