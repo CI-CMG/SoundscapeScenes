@@ -25,11 +25,11 @@ colnames(udy) = "Date"
 hd = as.data.frame (read.table(inFile, head = TRUE,  nrows = 1, sep = ",")[- 1, ] )
 
 
-for (dd in 1:nrow(udy)) {
+for (dd in 15:45) { # 1:nrow(udy)
   cat("Processing... ", ii, "(of ", length(inFiles), ") Day ", as.character(udy$Date[dd]), ":", dd , "(of ", nrow(udy), ") \n")
 
-  udy$start_col[dd] =  min( which(dat$dy == udy$Date[dd]) ) # start row
-  udy$end_col[dd] =  max( which(dat$dy == udy$Date[dd]) )   # end row
+  #udy$start_col[dd] =  min( which(dat$dy == udy$Date[dd]) )   # start row
+  #udy$end_col[dd]   =  max( which(dat$dy == udy$Date[dd]) )   # end row
   
   # read in part of files 
   tmp = as.data.frame ( read.table(inFile, skip = min( which(dat$dy == udy$Date[dd]) ), nrow= max( which(dat$dy == udy$Date[dd]) ), header=T, sep=",") )
@@ -48,3 +48,4 @@ for (dd in 1:nrow(udy)) {
 }
 
 
+# is it faster to read in as big file once and just parse??
