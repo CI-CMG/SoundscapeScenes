@@ -4,8 +4,8 @@ library(data.table)
 library(lubridate)
 
 # get all PSD files
-inDir   = choose.dir(default = "F:\\SanctSound\\AcousticScene_1min" , caption = "directory with PSD csv files" ) # CI03_04
-inFiles = list.files(inDir, pattern = "_PSD_1min.csv", full.names = T, recursive = T)
+inDir   = choose.dir(default = "F:\\SanctSound\\AcousticScene_1min" , caption = "directory with PSD csv files" ) 
+inFiles = list.files(inDir, pattern = "_PSD_1min.csv", full.names = T, recursive = F)
 
 
 ii = 1
@@ -25,7 +25,7 @@ colnames(udy) = "Date"
 hd = as.data.frame (read.table(inFile, head = TRUE,  nrows = 1, sep = ",")[- 1, ] )
 
 
-for (dd in 15:45) { # 1:nrow(udy)
+for (dd in 1  : nrow(udy) ) { # 1  : nrow(udy)
   cat("Processing... ", ii, "(of ", length(inFiles), ") Day ", as.character(udy$Date[dd]), ":", dd , "(of ", nrow(udy), ") \n")
 
   #udy$start_col[dd] =  min( which(dat$dy == udy$Date[dd]) )   # start row
