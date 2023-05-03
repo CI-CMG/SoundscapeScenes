@@ -6,27 +6,50 @@ library(data.table)
 library(ggplot2)
 library(lubridate)
 library(dplyr)
+library(viridis)
 
 inDir = "G:\\My Drive\\ActiveProjects\\SANCTSOUND\\combineFiles_AcousticScene\\"
 inFile = choose.files()
 pltf = 0
 
 load( inFile)
-as.data.frame( HMDdet %>% group_by(Category) %>% tally() )
 
+#FORMATTTING
+st =  sapply(strsplit(basename( inFile), "_"), "[[", 2) #site name
+dpl = gsub(".Rda", "", sapply(strsplit(basename( inFile ), "_"), "[[", 3) ) # deployment name
+efq = ncol(HMDdet)-5
+fq = as.numeric(as.character( gsub("X","", colnames(HMDdet[2:efq] )) ) ) # Frequency range: truncate to 100-2000 Hz
 
-# START HERE: 
-# get start and end of different , so segment works for plotting ####
-ggplot(outputVD, aes(x=Start, xend=End, y=Category, yend=Category, color=`TOL_125 max`)) +
-  geom_segment()+
+# Acoustic Scenes over time ####
+# get start and end of different AS, so segment works for plotting
+HMDdet = HMDdet %>%  mutate(test = case_when(Category == lag(Category) ~ "No", TRUE ~ "Yes"))
+HMDdet$test
+idx = which(HMDdet$test == "Yes") #start of new scene
+rm(AS)
+AS = as.data.frame(matrix(nrow = length(idx), ncol=3))
+AS$Start = HMDdet$dateTime[idx]
+AS$Category= HMDdet$Category[idx]
+AS$End = c( HMDdet$dateTime[ idx[2:length(idx)] +1 ] , HMDdet$dateTime[nrow(HMDdet)] )
+AS$Hours = as.numeric( as.character( difftime(AS$End, AS$Start, units = "hours") ))
+tal = as.data.frame( HMDdet %>% group_by(Category) %>% tally() )
+tal$PerTime = round( (tal$n/ sum(tal$n) * 100) , digits = 2 )
+AS$mth = month(AS$Start)
+
+ggplot(AS, aes(x=Start, xend=End, y=Category, yend=Category, color = Hours)) +
+  geom_segment() +
   theme_bw()+ 
   scale_y_discrete(limits=rev)+ 
-  geom_segment(size=12) +
-  xlab("")+  ylab("")+ ggtitle("Summary of Vessel Detection Periods") +
-  labs(caption = (paste0("samples in each category: A=", tal$n[1]," | B=", tal$n[2]," | C=", tal$n[3]," | D=", tal$n[4] )))+
+  geom_segment(size=20) +
+  xlab("")+  ylab("")+ ggtitle(paste("Acoustic Scenes at ", st, " (1-min)", sep = "") )  +
+  labs(caption = (paste0("Percent time in each category: ", 
+                         tal$Category[1], "=", tal$PerTime[1], " | ", 
+                         tal$Category[2], "=", tal$PerTime[2], " | ",
+                         tal$Category[3], "=", tal$PerTime[3], " | ",
+                         tal$Category[4], "=", tal$PerTime[4] ))) +
   scale_color_gradientn(colours = viridis(10))+
+  #facet_wrap(~mth) +
   theme(  axis.text.y = element_text(size = 14, colour="black"),
-          axis.text.x=element_text(size = 14, colour="black"),
+          axis.text.x = element_text(size = 14, colour="black"),
           plot.caption = element_text(size = 14) )
 
 # plot labeled spectra-- select specific data
