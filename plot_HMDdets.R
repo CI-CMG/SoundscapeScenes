@@ -14,7 +14,7 @@ pltf = 0
 
 load( inFile)
 
-#FORMATTTING
+#FORMATTTING ####
 st =  sapply(strsplit(basename( inFile), "_"), "[[", 2) #site name
 dpl = gsub(".Rda", "", sapply(strsplit(basename( inFile ), "_"), "[[", 3) ) # deployment name
 efq = ncol(HMDdet)-5
@@ -52,10 +52,10 @@ ggplot(AS, aes(x=Start, xend=End, y=Category, yend=Category, color = Hours)) +
           axis.text.x = element_text(size = 14, colour="black"),
           plot.caption = element_text(size = 14) )
 
-# plot labeled spectra-- select specific data
+# Labeled spectra ####
 HMDdet$Day = as.Date( HMDdet$dateTime )
-tmpD = HMDdet[ HMDdet$Day == "2019-04-28", ]
-ed = ncol(tmpD) -4
+tmpD = HMDdet[ HMDdet$Day == "2019-05-11", ]
+ed = ncol(tmpD) - 7
 
 if (pltf == 1) {
   medSPLm = reshape::melt (tmpD, id.vars = c("dateTime", "Category"),  measure.vars = colnames(tmpD)[ 2 : ed ] )

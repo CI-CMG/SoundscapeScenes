@@ -1,14 +1,14 @@
 # Purpose: label and Integrate 1-min hybrid-milli-decade (HMD) data with event based detections
 # Event detections = detection periods with start and end time
 ## (!!! make this a jupter notebook !!!!) ####
-
+#_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 rm(list=ls()) 
-
+#_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 library(data.table)
 library(ggplot2)
 library(lubridate)
 library(dplyr)
-
+#_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 # DETAILS ####
 # Label with specific predefined acoustic scene categories
 # See AK labels
@@ -21,20 +21,20 @@ library(dplyr)
 # this is a generic need in community- is labeling data- wind and event-based detections?
 # axiom help with data integration- no just visualization + data products
 # show example of wind and what I needed do to get to this
-
+#_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 # DIRECTORIES ####
 dirHMD = "I:\\SanctSound_AcousticScene" # ?? create loop through all manta directories ??
 dirDets = "F:\\SanctSound\\AcousticScene_subset\\detections"
 pltf = 0 # change to 1 if you want to plot daily 1-min spectra
 outDir = "G:\\My Drive\\ActiveProjects\\SANCTSOUND\\combineFiles_AcousticScene\\"
-
+#_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 # MANTA HMD DATA ####
 inDir  = choose.dir(default = dirHMD , caption = "Site directory with HMD csv files" ) # GR01_01
 inHMD =  list.files(path = inDir, pattern = "MinRes.csv", full.names = T,recursive = T)
 st = sapply(strsplit(basename( inHMD [1] ), "_"), "[[", 1) #site name
 dpl = sapply(strsplit(basename( inHMD[1] ), "_"), "[[", 2) # deployment name
-
-## ALL DETECTIONS ####
+#_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
+# DETECTIONS ####
 detFiles = list.files(path = dirDets, pattern = paste(st,dpl,sep="_"), full.names = T, recursive = T)
 detFiles = detFiles[!grepl("1d", detFiles)] #remove 1 day files
 detFiles = detFiles[!grepl("1h", detFiles)] #remove 1 hour files
@@ -42,7 +42,6 @@ detFiles = detFiles[!grepl("metadata", detFiles)] #remove metadata
 detFiles = detFiles[!grepl("\\.nc", detFiles)] #remove nc files
 #specific files of interest... !! site dependent!!
 detTypes = sapply(strsplit(sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(detFiles)), "_"), "[[", 4) #site name
-
 detAll = NULL
 for (dd in 1:length(detTypes) ) {
   inTmp = tolower( detTypes[dd] )
@@ -172,18 +171,17 @@ for (dd in 1:length(detTypes) ) {
   
 }
 
-
-# !! MERGE DETS with HMD !! ####
+#_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
+# MERGE DETS with HMD ####
 HMDdet = NULL
-
-for (ii in 1:length(inHMD)){ #length(inHMD)
+utypes = unique(detAll$Type)
+for (ii in 1:length(inHMD)){ #loop through daily files
   
-  #read in daily files
+  #read in daily file
   inFile = inHMD[ii]
   inHMDcsv = read.csv(inFile) # basename( inFile )
-  ck = 1440-dim(inHMDcsv)[1]
-  dy = as.Date ( gsub (".csv","", sapply(strsplit(basename( inFile ), "_"), "[[", 4) ), format="%Y%m%d" )
-  
+  ck = 1440 - dim(inHMDcsv)[1]
+  dy = as.Date ( gsub (".csv","", sapply(strsplit( basename( inFile ), "_"), "[[", 4) ), format="%Y%m%d" )
   #truncate HMD data
   colnames(inHMDcsv)[1] = "dateTime"
   inHMDcsv$dateTime = as.POSIXct(   inHMDcsv$dateTime, format = "%d-%b-%Y %H:%M:%S" , tz = "GMT" ) # Date format: format the date (? will netCDF files be the same?)
@@ -194,7 +192,7 @@ for (ii in 1:length(inHMD)){ #length(inHMD)
   fq = as.numeric(as.character( gsub("X","", colnames(inHMDdata[2:ncol(inHMDdata)] )) ) ) # Frequency range: truncate to 100-2000 Hz
   rm(ed,str, inHMDcsv)
   
-  # plots spectra
+  # (optional) plots spectra
   if (pltf == 1) {
     medSPLm = reshape::melt (inHMDdata, id.vars = c("dateTime"),  measure.vars = colnames(inHMDdata)[2:ncol(inHMDdata)] )
     colnames( medSPLm)  = c("date", "Fq", "SPL")
@@ -209,49 +207,52 @@ for (ii in 1:length(inHMD)){ #length(inHMD)
       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
   }
   
-  #merge HMD + detections
-  inHMDdata$VD = 0
-  for (dd in 1:nrow(VD) ){
-    # find all TOLs rows that fall with the detection period
-    idx =  which( inHMDdata$dateTime  >= VD$Start[dd] &  inHMDdata$dateTime + 60 < VD$End[dd] )
-    #  Check : length(idx) -  (VD$End[dd] - VD$Start[dd])
-    inHMDdata$VD[idx] = dd  # label TOL rows with vessel detection number- should not be overlap!
-  }
-  # unique(inHMDdata$VD) # not all detections labeled because only 1-day, not whole deployment
-  
-  inHMDdata$FD = 0
-  inHMDdata$Chorus_Type = "none"
+  #loop through detections to find all all minutes that match the detection period
+  inHMDdata$Dets = 0
+  inHMDdata$Type = "none"
   # not all detections as labeled because only 1-day, not whole deployment
-  for (dd in 1:nrow(FD) ){
-    
+  for (dd in 1: nrow(detAll) ){
     # find all TOLs rows that fall with the detection period
-    idx =  which( inHMDdata$dateTime  >= FD$Start[dd] &  inHMDdata$dateTime + 60 < FD$End[dd] )
-    #  Check : length(idx) -  (VD$End[dd] - VD$Start[dd])
-    # FD$Chorus_Type[dd]
-    if(length(idx) > 0 ){
-      cat(dd, "\n")
-      inHMDdata$FD[idx]          =  inHMDdata$FD[idx] + 1  # with chorus presence- can be overlapping
-      inHMDdata$Chorus_Type[idx] =  paste( inHMDdata$Chorus_Type[idx], FD$Chorus_Type[dd] , sep = ";")
-      
+    idx =  which( inHMDdata$dateTime  >= detAll$Start[dd] &  inHMDdata$dateTime + 60 < detAll$End[dd] )
+    if(length(idx) > 0 ) {
+      # cat(dd, "\n") # run this to test for specific row with data
+      inHMDdata$Dets[idx] =  inHMDdata$Dets[idx] + 1  #can be overlapping because all detections!
+      inHMDdata$Type[idx] =  paste( inHMDdata$Type[idx], detAll$Type[dd] , sep = ";") # keep track of types
     }
-    
   }
   
-  # unique(inHMDdata$FD) 
+  # unique(inHMDdata$Type) 
   HMDdet = rbind(HMDdet, inHMDdata) 
   
   cat("Processing... ",st," on " ,as.character( dy), "[", ii, " of ", length(inHMD)," days ]", ck, " minutes missing","\n" )
-  cat("Vessel Detections: ", length( unique( inHMDdata$VD ) ) ,"\n" )
-  cat("Fish Detections: ",   length( unique( inHMDdata$FD ) ) ,"\n" )
+  cat("Detection types present: ", length( unique( inHMDdata$Type ) )-1 ,"\n" )
   
 } ## !! end a daily loop !! ####
 
 # Detections added summary
-unique( HMDdet$VD )
-unique( HMDdet$FD )
-unique( HMDdet$Chorus_Type )
+unique( HMDdet$Type )
+unique( HMDdet$Dets )
 
+#_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
+#ACOUSTIC SCENE LABELS ####
+HMDdet$Category = "Ambient"
+HMDdet$Bio = 0
+HMDdet$Bio[grepl("bio", HMDdet$Type)] = "1" # rows with bio
+HMDdet$Ant = 0
+HMDdet$Ant[grepl("anthro", HMDdet$Type)] = "1" # rows with bio
 
+HMDdet$Category[HMDdet$Ant > 0  & HMDdet$Bio > 0] = "Bio+Anthro"
+HMDdet$Category[HMDdet$Ant > 0  & HMDdet$Bio == 0] = "Anthro"
+HMDdet$Category[HMDdet$Ant == 0 & HMDdet$Bio >0 ] = "Bio"
+unique(HMDdet$Category)
+
+#_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
+# EXPORT Acoustic Scenes ####
+as.data.frame( HMDdet %>% group_by(Category) %>% tally() )
+save(HMDdet, file = paste0(outDir, "HMDdet_", st,"_", dpl, ".Rda"))
+
+#_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
+ #NOT USED ####
 # plot labeled spectra-- select specific data
 HMDdet$Day = as.Date( HMDdet$dateTime )
 tmpD = HMDdet[ HMDdet$Day == "2019-04-28", ]
@@ -271,24 +272,8 @@ if (pltf == 1) {
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 }
 
-#ACOUSTIC SCENE LABELS ####
-unique(HMDdet$VD)
-unique(HMDdet$Chorus_Type)
-HMDdet$Category = "Ambient"
-HMDdet$Category[HMDdet$VD > 0  & HMDdet$Chorus_Type != "none"] = "Bio+Anthro"
-HMDdet$Category[HMDdet$VD > 0  & HMDdet$Chorus_Type == "none"] = "Anthro"
-HMDdet$Category[HMDdet$VD == 0 & HMDdet$Chorus_Type != "none"] = "Bio"
-unique(HMDdet$Category)
 
-
-# SITE GRAPHIC of Acoustic Scenes ####
-as.data.frame( HMDdet %>% group_by(Category) %>% tally() )
-outDir = "G:\\My Drive\\ActiveProjects\\SANCTSOUND\\combineFiles_AcousticScene\\"
-save(HMDdet, file = paste0(outDir, "HMDdet_", st,"_", dpl, ".Rda"))
-
-
-# START HERE: 
-# get start and end of different , so segment works for plotting ####
+# get start and end of different , so segment works for plotting
 ggplot(outputVD, aes(x=Start, xend=End, y=Category, yend=Category, color=`TOL_125 max`)) +
   geom_segment()+
   theme_bw()+ 
@@ -301,7 +286,7 @@ ggplot(outputVD, aes(x=Start, xend=End, y=Category, yend=Category, color=`TOL_12
           axis.text.x=element_text(size = 14, colour="black"),
           plot.caption = element_text(size = 14) )
 
-# NOT WORKING, yet ####
+# NOT WORKING, yet
 ## (option 2) PSD files (csv format, output of Triton Soundscape Metrics) #### 
 #run createDailyPSD_SoundscapeMetrics.R first to break up HUGE output of Trition
 inDir   = choose.dir(default = "F:\\SanctSound\\AcousticScene_1min" , caption = "directory with PSD csv files" ) # CI03_04
@@ -323,10 +308,4 @@ ii = 2
 inFile = inFiles[ii]
 inHMDcsv = read.csv(inFile)
 
-# DETECTIONS #### 
-inDir= choose.dir() #all detections
-list.dirs(inDir)
 
-
-
-# PLOT OF LABELED DATA #### 
