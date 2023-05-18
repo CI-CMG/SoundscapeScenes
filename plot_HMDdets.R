@@ -26,7 +26,7 @@ unique( HMDdet$Dets )
 HMDdet = HMDdet %>%  mutate(test = case_when(Category == lag(Category) ~ "No", TRUE ~ "Yes"))
 HMDdet$test
 idx = which(HMDdet$test == "Yes") #start of new scene
-rm(AS)
+#rm(AS)
 AS = as.data.frame(matrix(nrow = length(idx), ncol=3))
 AS$Start = HMDdet$dateTime[idx]
 AS$Category= HMDdet$Category[idx]
@@ -55,7 +55,7 @@ ggplot(AS, aes(x=Start, xend=End, y=Category, yend=Category, color = Hours)) +
 
 # Labeled spectra- one day ####
 HMDdet$Day = as.Date( HMDdet$dateTime )
-dy = "2019-06-11"
+dy = "2019-04-11"
 tmpD = HMDdet[ HMDdet$Day == dy, ] 
 ed = ncol(tmpD) - 7
 head(tmpD)
@@ -79,7 +79,7 @@ if (pltf == 1) {
 # Median spectra for each day + Category ####
 udys = unique(HMDdet$Day)
 as.data.frame(udys)
-as.data.frame( colnames(tmpD)[ 2 : ed ] )
+as.data.frame( colnames(HMDdet)[ 2 : ed ] )
 
 tst = HMDdet %>% group_by(c(Category))  %>% summarise(median100 = median(X100, na.rm = TRUE))
 
