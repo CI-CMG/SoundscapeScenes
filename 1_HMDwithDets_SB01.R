@@ -31,8 +31,10 @@ dirHMD = "I:\\SanctSound_AcousticScene" # ?? create loop through all manta direc
 dirDets = "F:\\SanctSound\\AcousticScene_subset\\detections"
 pltf = 0 # change to 1 if you want to plot daily 1-min spectra
 outDir = "G:\\My Drive\\ActiveProjects\\SANCTSOUND\\combineFiles_AcousticScene\\"
+
 #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 # MANTA HMD DATA ####
+# by deployent
 inDir  = choose.dir(default = dirHMD , caption = "Site directory with HMD csv files" ) # GR01_01
 inHMD =  list.files(path = inDir, pattern = "MinRes.csv", full.names = T,recursive = T)
 st = sapply(strsplit(basename( inHMD [1] ), "_"), "[[", 1) #site name
@@ -134,6 +136,25 @@ for (dd in 1:length(detTypes) ) {
     }  
   }
   
+  ## atlanticcod detections ####
+  if (inTmp == "atlanticcod" ){
+    detTmp = detFiles[grepl(inTmp, detFiles)] 
+    tmp = read.csv(detTmp)
+    if (length( colnames(tmp) ) == 3 ){
+      colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
+      tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
+      tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
+      tmp$Site = st
+      tmp$Dep  = dpl
+      tmp$Yr  = year(tmp$Start )
+      tmp$Mth = month(tmp$Start )
+      tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
+      tmp$DurH = tmp$DurS/3600
+      tmp$Type = paste0( inTmp, "_bio") 
+      detAll = rbind(detAll, tmp)
+      rm(tmp)
+    }  
+  }
   
   ## VESSEL detections ####
   if (inTmp == "ships" ){
@@ -180,6 +201,7 @@ for (dd in 1:length(detTypes) ) {
 # MERGE DETS with HMD ####
 HMDdet = NULL
 utypes = unique(detAll$Type)
+
 for (ii in 1:length(inHMD)){ #loop through daily files
   
   #read in daily file
@@ -187,6 +209,7 @@ for (ii in 1:length(inHMD)){ #loop through daily files
   inHMDcsv = read.csv(inFile) # basename( inFile )
   ck = 1440 - dim(inHMDcsv)[1]
   dy = as.Date ( gsub (".csv","", sapply(strsplit( basename( inFile ), "_"), "[[", 4) ), format="%Y%m%d" )
+  
   #truncate HMD data
   colnames(inHMDcsv)[1] = "dateTime"
   inHMDcsv$dateTime = as.POSIXct(   inHMDcsv$dateTime, format = "%d-%b-%Y %H:%M:%S" , tz = "GMT" ) # Date format: format the date (? will netCDF files be the same?)
