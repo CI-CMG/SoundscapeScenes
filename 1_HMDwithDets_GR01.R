@@ -71,7 +71,7 @@ FD = as.data.frame(FD) #head(FD)
 
 # !! start daily loop !! ####
 HMDdet = NULL
-
+ck2 = NULL
 for (ii in 1:length(inHMD)){ #length(inHMD)
   
   #read in daily files
@@ -135,6 +135,7 @@ for (ii in 1:length(inHMD)){ #length(inHMD)
   
   # unique(inHMDdata$FD) 
   HMDdet = rbind(HMDdet, inHMDdata) 
+  ck2 = rbind(ck2, c(as.character( dy), ck,length( unique( inHMDdata$FD ) ), length( unique( inHMDdata$VD ) ) ))
   
   cat("Processing... ",st," on " ,as.character( dy), "[", ii, " of ", length(inHMD)," days ]", ck, " minutes missing","\n" )
   cat("Vessel Detections: ", length( unique( inHMDdata$VD ) ) ,"\n" )
@@ -146,7 +147,11 @@ for (ii in 1:length(inHMD)){ #length(inHMD)
 unique( HMDdet$VD )
 unique( HMDdet$FD )
 unique( HMDdet$Chorus_Type )
-
+colnames(ck2) = c("date", "mins missing", "Fish Dets", "Vessel Dets")
+ck2 = as.data.frame( ck2 )
+hist( as.numeric( as.character( ck2$`mins missing`) ), main= "Minutes Missing- manta 12" )
+ck2$`mins missing` = as.numeric( as.character( ck2$`mins missing`) )
+ck2 [ ck2$`mins missing` > 200 , ]
 
 # plot labeled spectra-- select specific data
 HMDdet$Day = as.Date( HMDdet$dateTime )
