@@ -27,18 +27,21 @@ library(dplyr)
 
 #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 # DIRECTORIES ####
-dirHMD = "I:\\SanctSound_AcousticScene" # ?? create loop through all manta directories ??
-dirDets = "F:\\SanctSound\\AcousticScene_subset\\detections"
+dirTop = "F:\\SanctSound" # ?? create loop through all manta directories ??
 pltf = 0 # change to 1 if you want to plot daily 1-min spectra
-outDir = "G:\\My Drive\\ActiveProjects\\SANCTSOUND\\combineFiles_AcousticScene\\"
+dirOut = "F:\\SanctSound\\analysis\\combineFiles_AcousticScene"
 
 #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 # MANTA HMD DATA ####
-# by deployent
-inDir  = choose.dir(default = dirHMD , caption = "Site directory with HMD csv files" ) # GR01_01
+# by deployment
+inDir  = choose.dir(default = dirTop , caption = "Site directory with HMD csv files" ) # GR01_01
 inHMD =  list.files(path = inDir, pattern = "MinRes.csv", full.names = T,recursive = T)
 st = sapply(strsplit(basename( inHMD [1] ), "_"), "[[", 1) #site name
 dpl = sapply(strsplit(basename( inHMD[1] ), "_"), "[[", 2) # deployment name
+dirSite = dirname(inHMD[1])
+dirSite = unlist(strsplit(dirSite, '/'))
+dirSite = paste0(dirSite[-length(dirSite)], collapse = '/')
+dirDets = paste0(dirSite,"\\detections\\")
 
 #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 # DETECTIONS ####
@@ -55,8 +58,7 @@ detAll = NULL
 # sonar, plainfinmidshipman, explosions, bocaccio, atlanticcod, VESSEL, blue, mfa, impulse, googleAI
 for (dd in 1:length(detTypes) ) {
   
-  inTmp = tolower( detTypes[dd] )
-  # !! only set to read in one detection file ####
+  inTmp = tolower( detTypes[dd] )   # !! only set to read in one detection file ####
   
   ## googleai detections ####
   if (inTmp == "googleai" ){
@@ -110,7 +112,7 @@ for (dd in 1:length(detTypes) ) {
   if (inTmp == "mfa" ){
     detTmp = detFiles[grepl(inTmp, detFiles)] 
     
-       = read.csv(detTmp)
+    tmp   = read.csv(detTmp)
     if (length( colnames(tmp) ) == 3 ){
       colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
       tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
@@ -147,7 +149,6 @@ for (dd in 1:length(detTypes) ) {
     } 
   } 
 
-  
   ## plainfinmidshipman detections ####
   if (inTmp == "plainfinmidshipman" ){
     detTmp = detFiles[grepl(inTmp, detFiles)] 
@@ -168,7 +169,6 @@ for (dd in 1:length(detTypes) ) {
     }  
   }
   
-  
   ## explosions detections ####
   if (inTmp == "explosions" ){
     detTmp = detFiles[grepl(inTmp, detFiles)] 
@@ -188,7 +188,6 @@ for (dd in 1:length(detTypes) ) {
       rm(tmp)
     } 
   }
-  
   
   ## bocaccio detections ####
   if (inTmp == "bocaccio" ){
@@ -252,10 +251,10 @@ for (dd in 1:length(detTypes) ) {
   }
  
   ## BLUE detections ####
-  if (inTmp== "bluewhale" ){
+  if (inTmp== "bluewhale" ) {
     detTmp = detFiles[grepl(inTmp, detFiles)] 
     tmp = read.csv(detTmp)
-    if (length( colnames(tmp) ) == 3 ){
+    if ( length( colnames(tmp) ) == 3 ){
       colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
       tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
       tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
@@ -268,7 +267,7 @@ for (dd in 1:length(detTypes) ) {
       tmp$Type = paste0( inTmp, "_bio") 
       detAll = rbind(detAll, tmp)
       rm(tmp)
-    }   
+    } else{  rm(tmp) }   
   }
   
 }
@@ -287,15 +286,34 @@ for (ii in 1:length(inHMD)){ #loop through daily files
   ck = 1440 - dim(inHMDcsv)[1]
   dy = as.Date ( gsub (".csv","", sapply(strsplit( basename( inFile ), "_"), "[[", 4) ), format="%Y%m%d" )
   
-  #truncate HMD data
   colnames(inHMDcsv)[1] = "dateTime"
   inHMDcsv$dateTime = as.POSIXct(   inHMDcsv$dateTime, format = "%d-%b-%Y %H:%M:%S" , tz = "GMT" ) # Date format: format the date (? will netCDF files be the same?)
   fq = as.numeric(as.character( gsub("X","", colnames(inHMDcsv[3:ncol(inHMDcsv)] )) ) ) # Frequency range: truncate to 100-2000 Hz
   str = which(fq == 100)+2      #  colnames(inHMDcsv)[st]
   ed = which(fq == 1997.6)+2   #  colnames(inHMDcsv)[ed]
+  
+  # CHECK and remove rows that split a given minute into sections
+  # Check: length( unique( inHMDcsv$dateTime) ) # they are all unique!! wtf
+  # extra rows happen when a minute has extra second 61 seconds for a given minute so splits into different rows
+  # solution: only keep 00 seconds for a specific minute
+  # !!! start here !!! ####
+  inHMDcsv$HR  = hour(inHMDcsv$dateTime)
+  inHMDcsv$MIT = minute(inHMDcsv$dateTime)
+  inHMDcsv$SEC = second(inHMDcsv$dateTime)
+  
+  iextra =  which( inHMDcsv$SEC == 0 )
+  inHMDcsv = inHMDcsv[iextra ,]
+  
+  #inHMDcsv[  c( iextra[1]-2, iextra[1]-1, iextra[1],iextra[1]+1 ), 1:3  ]
+  #inHMDcsv[inHMDcsv$X0 <59, 1:3 ]
+   plot(inHMDcsv$HR) ## some non-zero minutes are included!!! wtf   
+  
+  
+  #truncate HMD data
   inHMDdata = as.data.frame( inHMDcsv[, c(1, str:ed )] )
   fq = as.numeric(as.character( gsub("X","", colnames(inHMDdata[2:ncol(inHMDdata)] )) ) ) # Frequency range: truncate to 100-2000 Hz
   rm(ed,str, inHMDcsv)
+  
   
   # (optional) plots spectra
   if (pltf == 1) {
@@ -336,15 +354,16 @@ for (ii in 1:length(inHMD)){ #loop through daily files
   
 } ## !! end a daily loop !! ####
 
-# Detections added summary
+#some checks:
 unique( HMDdet$Type )
 unique( HMDdet$Dets )
 
 colnames(ck2) = c("date", "mins missing", "Fish Dets", "Vessel Dets")
 ck2 = as.data.frame( ck2 )
-hist( as.numeric( as.character( ck2$`mins missing`) ), main= "Minutes Missing- manta 12" )
+hist( as.numeric( as.character( ck2$`mins missing`) ), main= "Minutes Missing- manta 14" )
 ck2$`mins missing` = as.numeric( as.character( ck2$`mins missing`) )
-ck2 [ ck2$`mins missing` > 200 , ]
+ck2 [ ck2$`mins missing` > 0 , ]
+
 
 #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 #ACOUSTIC SCENE LABELS ####
@@ -365,9 +384,10 @@ tal$PerTime = round( (tal$n/ sum(tal$n) * 100) , digits = 2 )
 
 #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 # EXPORT Acoustic Scenes ####
-# !! saves out all data, not daily ####
+# !! saves out all data, not as daily ####
+DC = Sys.Date()
 as.data.frame( HMDdet %>% group_by(Category) %>% tally() )
-save(HMDdet, file = paste0(outDir, "HMDdet_", st,"_", dpl, ".Rda"))
+save(HMDdet, file = paste0(dirOut, "\\HMDdet_", st,"_", dpl,DC, ".Rda"))
 
 
 #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
