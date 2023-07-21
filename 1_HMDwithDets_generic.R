@@ -34,6 +34,7 @@ dirOut = "F:\\SanctSound\\analysis\\combineFiles_AcousticScene"
 #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 # MANTA HMD DATA ####
 # by deployment
+# inDataset = c("CI04_02","PM02_01","HI04_02" ,"SB01_02" ,"GR01_01" ,"MB02_02" ,"OC02_02" ,"SB01_08"  )
 inDir  = choose.dir(default = dirTop , caption = "Site directory with HMD csv files" ) # GR01_01
 inHMD =  list.files(path = inDir, pattern = "MinRes.csv", full.names = T,recursive = T)
 st = sapply(strsplit(basename( inHMD [1] ), "_"), "[[", 1) #site name
