@@ -34,11 +34,13 @@ dirOut = "F:\\SanctSound\\analysis\\combineFiles_AcousticScene"
 #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
 # MANTA HMD DATA ####
 # by deployment
-inSites = c( "PM02_01","HI04_02","SB01_02","GR01_01","MB02_02","OC02_02","CI04_02","SB03_08")
+inSites = c( "CI04_02", "GR01_01", "HI04_02", "MB02_02", "OC02_02", "PM02_01","SB01_02", "SB03_08")
 
 ver = "manta_9.6.14"
 
-for (s in 1:length(inSites) ) {
+# GENERAL INFORMATION-- run this to get summery of detections
+for (s in 1:length(inSites)  ) { # length(inSites)
+  
   inS = inSites[s] 
   inDir = paste0(dirTop, "//", inS, "//", ver)
   
@@ -60,15 +62,117 @@ for (s in 1:length(inSites) ) {
   #detFiles = detFiles[!grepl("1h", detFiles)] #remove 1 hour files... too keep humpback AI results
   detFiles = detFiles[!grepl("metadata", detFiles)] #remove metadata
   detFiles = detFiles[!grepl("\\.nc", detFiles)] #remove nc files
+  detFiles = detFiles[!grepl("\\.nc", detFiles)] #remove xlz files
   #specific files of interest... !! site dependent!!
   detTypes = sapply(strsplit(sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(detFiles)), "_"), "[[", 4) #site name
-  detTypes
+  cat(st, detTypes,"\n")
+}
+
+
+for (s in 1:length(inSites)  ) { # length(inSites)
+  inS = inSites[s] 
+  inDir = paste0(dirTop, "//", inS, "//", ver)
+  
+  #inDir  = choose.dir(default = dirTop , caption = "Site directory with HMD csv files" ) # GR01_01
+  inHMD =  list.files(path = inDir, pattern = "MinRes.csv", full.names = T,recursive = T)
+  st = sapply(strsplit(basename( inHMD [1] ), "_"), "[[", 1) #site name
+  dpl = sapply(strsplit(basename( inHMD[1] ), "_"), "[[", 2) # deployment name
+  dirSite = dirname(inHMD[1])
+  dirSite = unlist(strsplit(dirSite, '/'))
+  dirSite = paste0(dirSite[-length(dirSite)], collapse = '/')
+  #ver = strsplit( gsub("^.*[\\]", "", inHMD[1] ),"/" )[[1]] [1]
+  
+ 
+  #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
+  # DETECTIONS ####
+  dirDets = paste0(dirSite,"\\detections\\")
+  detFiles = list.files(path = dirDets, pattern = paste(st,dpl,sep="_"), full.names = T, recursive = T)
+  detFiles = detFiles[!grepl("1d", detFiles)] #remove 1 day files
+  detFiles = detFiles[!grepl("1h", detFiles)] #remove 1 day files
+  #detFiles = detFiles[!grepl("1h", detFiles)] #remove 1 hour files... too keep humpback AI results
+  detFiles = detFiles[!grepl("metadata", detFiles)] #remove metadata
+  detFiles = detFiles[!grepl("\\.nc", detFiles)] #remove nc files
+  #specific files of interest... !! site dependent!!
+  detTypes = sapply(strsplit(sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(detFiles)), "_"), "[[", 4) #site name
+  #cat(st, detTypes,"\n")
   detAll = NULL
   
-  # sonar, plainfinmidshipman, explosions, bocaccio, atlanticcod, VESSEL, blue, mfa, impulse, googleAI
+  cat("Processing..." , inS, "-", length(inHMD), " HMD files,", ver, ': ', detTypes)
+  
+  # loop through detections: sonar, plainfinmidshipman, explosions, bocaccio, atlanticcod, VESSEL, blue, mfa, impulse, googleAI
   for (dd in 1:length(detTypes) ) {
     
     inTmp = tolower( detTypes[dd] )   # !! only set to read in one detection file ####
+    
+    
+    ## VESSEL detections ####
+    if (inTmp == "ships" ){
+      detTmp = detFiles[grepl(inTmp, detFiles)] 
+      tmp = read.csv(detTmp)
+      colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
+      if (tmp$Label[1] != "NoShip") {
+        tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
+        tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
+        tmp$Site = st
+        tmp$Dep  = dpl
+        tmp$Yr  = year(tmp$Start )
+        tmp$Mth = month(tmp$Start )
+        tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
+        tmp$DurH = tmp$DurS/3600 
+        tmp = tmp[tmp$Label == "ship", ] # head(VD)
+        tmp$Type = paste0( inTmp, "_anthro") # head(VD)
+        detAll = rbind(detAll, tmp)
+        
+        rm(tmp)
+      }
+    }
+    
+    ## Killer whale detections ####
+    if (inTmp == "killerwhale" ){
+      detTmp = detFiles[grepl(detTypes[dd], detFiles)] 
+      
+      tmp = read.csv(detTmp) # head(tmp)
+      colnames(tmp) = c("ISOStartTime","ISOEndTime","Label","Ecotype" )
+      tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
+      tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
+      tmp$Site = st
+      tmp$Dep  = dpl
+      tmp$Yr  = year(tmp$Start )
+      tmp$Mth = month(tmp$Start )
+      tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
+      tmp$DurH = tmp$DurS/3600 
+      
+      tmp$Type = paste0( inTmp, tmp$Ecotype ,"_bio") 
+      
+      colnames(tmp)
+      tmp2 = tmp[,c(1:3,5:13)]
+      
+      detAll = rbind(detAll, tmp2)
+      rm(tmp)
+    } 
+    
+    ## FishChorus detections ####
+    if (inTmp == "fishchoruses" ){
+      detTmp = detFiles[grepl(detTypes[dd], detFiles)] 
+      
+      tmp = read.csv(detTmp) # head(tmp)
+      
+      tmp$Start = as.POSIXct(tmp$Start_Time_UTC, format = "%m/%d/%Y %H:%M", tz = "GMT" )
+      tmp$End = as.POSIXct(tmp$End_Time_UTC, format = "%m/%d/%Y %H:%M", tz = "GMT" )
+      tmp$Site = st
+      tmp$Dep  = dpl
+      tmp$Yr  = year(tmp$Start )
+      tmp$Mth = month(tmp$Start )
+      tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
+      tmp$DurH = tmp$DurS/3600
+      tmp$Type = paste0( inTmp, tmp$Chorus_Type, "_bio")  # label as biological
+      tmp2 = cbind(empty_column=NA, empty_column=NA, inTmp, tmp[,18:26])
+      colnames(tmp2)[1]= "ISOStartTime"
+      colnames(tmp2)[2]= "ISOEndTime"
+      colnames(tmp2)[3]= "Label"
+      detAll = rbind(detAll, tmp2)
+      rm(tmp)
+    } 
     
     ## googleai detections ####
     if (inTmp == "googleai" ){
@@ -238,28 +342,7 @@ for (s in 1:length(inSites) ) {
         rm(tmp)
       }  
     }
-    
-    ## VESSEL detections ####
-    if (inTmp == "ships" ){
-      detTmp = detFiles[grepl(inTmp, detFiles)] 
-      tmp = read.csv(detTmp)
-      colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
-      if (tmp$Label != "NoShip") {
-        tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
-        tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
-        tmp$Site = st
-        tmp$Dep  = dpl
-        tmp$Yr  = year(tmp$Start )
-        tmp$Mth = month(tmp$Start )
-        tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
-        tmp$DurH = tmp$DurS/3600 
-        tmp = tmp[tmp$Label == "ship", ] # head(VD)
-        tmp$Type = paste0( inTmp, "_anthro") # head(VD)
-        detAll = rbind(detAll, tmp)
-        
-        rm(tmp)
-      }
-    }
+   
     
     ## BLUE detections ####
     if (inTmp== "bluewhale" ) {
