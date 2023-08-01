@@ -21,6 +21,7 @@ for (f in 1: length(inFiles)) { # f = 2 for testing
   efq = ncol(HMDdet)-5
   fq = as.numeric(as.character( gsub("X","", colnames(HMDdet[2:efq] )) ) ) # Frequency range: truncate to 100-2000 Hz
   AStime = HMDdet[, efq:ncol(HMDdet) ]
+  HMDdet$Day = as.Date( HMDdet$dateTime )
   
   # Acoustic Scenes over time ####
   # get start and end of different AS, so segment works for plotting
@@ -46,7 +47,7 @@ for (f in 1: length(inFiles)) { # f = 2 for testing
     geom_segment(size=10) +
     xlab("")+  ylab("")+ 
     ggtitle(paste("Acoustic Scenes at ", st, " (1-min)", sep = "") )  +
-    labs(caption = (paste0("Percent time in each category: ", 
+    labs(caption = (paste0("% time in each category: ", 
                            tal$Category[1], "=", tal$PerTime[1], " | ", 
                            tal$Category[2], "=", tal$PerTime[2], " | ",
                            tal$Category[3], "=", tal$PerTime[3], " | ",
@@ -55,9 +56,10 @@ for (f in 1: length(inFiles)) { # f = 2 for testing
     #facet_wrap(~mth) +
     theme(  axis.text.y = element_text(size = 10, colour="black"),
             axis.text.x = element_text(size = 10, colour="black"),
-            plot.caption = element_text(size = 10) )
+            plot.caption = element_text(size = 8) )
  
-  ggsave(p1, file = paste0(inDir, "\\AcousticScene_", st,".png"), width = 1420, height = 664, units = "px")
+  p1
+  ggsave(p1, file = paste0(inDir, "\\AcousticScene_", st,".png"), width = 1500, height = 700, units = "px")
   
   # Median spectra for each day + Category ####
   udys = unique(HMDdet$Day)
@@ -82,12 +84,13 @@ for (f in 1: length(inFiles)) { # f = 2 for testing
     geom_line( size = 1) +
     scale_x_log10() +
     ylab("1-min HMD median")+ xlab("Frequency (Hz)")+
-    #theme_minimal() +
+    ylim(c(50,100)) +
+    theme_bw()+ 
     ggtitle( st) +
     theme(legend.position="top")+
     theme(text = element_text(size =10) )
-  
-  ggsave(p2, file = paste0(inDir, "\\ASspectra_", st,".png"), width = 1000, height = 1000, units = "px")
+  p2
+  ggsave(p2, file = paste0(inDir, "\\ASspectra_", st,".png"), width = 1500, height = 1000, units = "px")
   
   ## PLOT 3: median + percentile spectra ####
  p3 =  ggplot(tst, aes(x=Fq, color=Category ) ) +
@@ -96,18 +99,16 @@ for (f in 1: length(inFiles)) { # f = 2 for testing
     geom_line(aes (y=upper.x),  alpha = .5,  size = 1 ) +
     scale_x_log10() +
     ylab("1-min HMD Percentiles (25,50,95)")+ xlab("Frequency (Hz)")+
-    #theme_minimal() +
+    theme_bw()+ 
     ylim(c(50,100)) +
-    #labs(caption =unique( HMDdet$Type ) ) +
     ggtitle( paste0( st, ": ", as.character( min(HMDdet$Day) ), " to ", as.character( max(HMDdet$Day) ), "\n (Total min=", nrow(HMDdet),")" )) +
-    # theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
     theme(legend.position="top")+ 
     theme(text = element_text(size =10) )
   p3
-  ggsave(p3, file = paste0(inDir, "\\ASspectraPer_", st,".png"), width = 1000, height = 1000, units = "px")
+  ggsave(p3, file = paste0(inDir, "\\ASspectraPer_", st,".png"), width = 1500, height = 1000, units = "px")
   
   # Labeled spectra- one day ####
-  HMDdet$Day = as.Date( HMDdet$dateTime )
+  
   dy = "2019-04-11"
   tmpD = HMDdet[ HMDdet$Day == dy, ] 
   ed = ncol(tmpD) - 7

@@ -39,7 +39,7 @@ inSites = c( "CI04_02", "GR01_01", "HI04_02", "MB02_02", "OC02_02", "PM02_01","S
 ver = "manta_9.6.14"
 
 # GENERAL INFORMATION-- run this to get summery of detections
-for (s in 1:length(inSites)  ) { # length(inSites)
+for (s in 6:6  ) { #  1:length(inSites)
   
   inS = inSites[s] 
   inDir = paste0(dirTop, "//", inS, "//", ver)
@@ -103,7 +103,7 @@ for (s in 1:length(inSites)  ) { # length(inSites)
   for (dd in 1:length(detTypes) ) {
     
     inTmp = tolower( detTypes[dd] )   # !! only set to read in one detection file ####
-    
+    inTmp
     
     ## VESSEL detections ####
     if (inTmp == "ships" ){
@@ -225,20 +225,23 @@ for (s in 1:length(inSites)  ) { # length(inSites)
     ## MFA detections ####
     if (inTmp == "mfa" ){
       detTmp = detFiles[grepl(inTmp, detFiles)] 
-      
       tmp   = read.csv(detTmp)
       if (length( colnames(tmp) ) == 3 ){
+        
         colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
         tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
         tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
-        tmp$Site = st
-        tmp$Dep  = dpl
-        tmp$Yr  = year(tmp$Start )
-        tmp$Mth = month(tmp$Start )
-        tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
-        tmp$DurH = tmp$DurS/3600
-        tmp$Type = paste0( inTmp, "_anthro") 
-        detAll = rbind(detAll, tmp)
+        if (tmp$Label != 0 & nrow(tmp) > 1) #no detections just file with start and end time!
+        {
+          tmp$Site = st
+          tmp$Dep  = dpl
+          tmp$Yr  = year(tmp$Start )
+          tmp$Mth = month(tmp$Start )
+          tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
+          tmp$DurH = tmp$DurS/3600
+          tmp$Type = paste0( inTmp, "_anthro") 
+          detAll = rbind(detAll, tmp)
+        }
         rm(tmp)
       } 
     } 
