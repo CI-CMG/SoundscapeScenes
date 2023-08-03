@@ -10,10 +10,10 @@ library(viridis)
 library(tidyverse)
 
 inDir = (  "F:\\SanctSound\\analysis\\combineFiles_AcousticScene" )
-inFiles = list.files( inDir, pattern = ".Rda")
+inFiles = list.files( inDir, pattern = ".Rda", full.names = T)
 pltf = 0
 
-for (f in 1: length(inFiles)) { # f = 2 for testing
+for (f in 1: length(inFiles)) { # f = 6 for testing
   load( inFiles[f])
   
   #FORMATTTING ####

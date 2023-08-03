@@ -38,8 +38,10 @@ inSites = c( "CI04_02", "GR01_01", "HI04_02", "MB02_02", "OC02_02", "PM02_01","S
 
 ver = "manta_9.6.14"
 
-# GENERAL INFORMATION-- run this to get summery of detections
-for (s in 6:6  ) { #  1:length(inSites)
+# GENERAL INFORMATION ####
+# run this to get summery of detections
+for (s in 1:length(inSites)  ) { #  1:length(inSites) s = 1
+  
   
   inS = inSites[s] 
   inDir = paste0(dirTop, "//", inS, "//", ver)
@@ -54,8 +56,7 @@ for (s in 6:6  ) { #  1:length(inSites)
   #ver = strsplit( gsub("^.*[\\]", "", inHMD[1] ),"/" )[[1]] [1]
   
   cat("Processing..." , inS, "-", length(inHMD), " HMD files,", ver)
-  #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
-  # DETECTIONS ####
+ 
   dirDets = paste0(dirSite,"\\detections\\")
   detFiles = list.files(path = dirDets, pattern = paste(st,dpl,sep="_"), full.names = T, recursive = T)
   detFiles = detFiles[!grepl("1d", detFiles)] #remove 1 day files
@@ -68,8 +69,8 @@ for (s in 6:6  ) { #  1:length(inSites)
   cat(st, detTypes,"\n")
 }
 
-
-for (s in 1:length(inSites)  ) { # length(inSites)
+# COMBINE DETECTIONS ####
+for (s in 2:length(inSites)  ) { # length(inSites)
   inS = inSites[s] 
   inDir = paste0(dirTop, "//", inS, "//", ver)
   
@@ -82,13 +83,10 @@ for (s in 1:length(inSites)  ) { # length(inSites)
   dirSite = paste0(dirSite[-length(dirSite)], collapse = '/')
   #ver = strsplit( gsub("^.*[\\]", "", inHMD[1] ),"/" )[[1]] [1]
   
- 
-  #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
-  # DETECTIONS ####
   dirDets = paste0(dirSite,"\\detections\\")
   detFiles = list.files(path = dirDets, pattern = paste(st,dpl,sep="_"), full.names = T, recursive = T)
   detFiles = detFiles[!grepl("1d", detFiles)] #remove 1 day files
-  detFiles = detFiles[!grepl("1h", detFiles)] #remove 1 day files
+  detFiles = detFiles[!grepl("dolphins", detFiles)] #remove 1 hour files
   #detFiles = detFiles[!grepl("1h", detFiles)] #remove 1 hour files... too keep humpback AI results
   detFiles = detFiles[!grepl("metadata", detFiles)] #remove metadata
   detFiles = detFiles[!grepl("\\.nc", detFiles)] #remove nc files
@@ -99,10 +97,11 @@ for (s in 1:length(inSites)  ) { # length(inSites)
   
   cat("Processing..." , inS, "-", length(inHMD), " HMD files,", ver, ': ', detTypes)
   
-  # loop through detections: sonar, plainfinmidshipman, explosions, bocaccio, atlanticcod, VESSEL, blue, mfa, impulse, googleAI
+  ## LOOP through detections ####
+  # sonar, plainfinmidshipman, explosions, bocaccio, atlanticcod, VESSEL, blue, mfa, impulse, googleAI
   for (dd in 1:length(detTypes) ) {
     
-    inTmp = tolower( detTypes[dd] )   # !! only set to read in one detection file ####
+    inTmp = tolower( detTypes[dd] )
     inTmp
     
     ## VESSEL detections ####
@@ -177,9 +176,9 @@ for (s in 1:length(inSites)  ) { # length(inSites)
     ## googleai detections ####
     if (inTmp == "googleai" ){
       detTmp = detFiles[grepl(inTmp, detFiles)] 
-      
       tmp = read.csv(detTmp) # head(tmp)
       tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
+      
       # each hour has a probability -- threshold of .60? prop of hour with google AI
       tmp$ISOEndTime   = tmp$Start + 60*60
       tmp$End   = tmp$Start + 60*60
@@ -204,20 +203,22 @@ for (s in 1:length(inSites)  ) { # length(inSites)
     ## impulse detections ####
     if (inTmp == "unknownimpulse" ){
       detTmp = detFiles[grepl(inTmp, detFiles)] 
-      
       tmp = read.csv(detTmp)
       if (length( colnames(tmp) ) == 3 ){
         colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
         tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
         tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
-        tmp$Site = st
-        tmp$Dep  = dpl
-        tmp$Yr  = year(tmp$Start )
-        tmp$Mth = month(tmp$Start )
-        tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
-        tmp$DurH = tmp$DurS/3600
-        tmp$Type = paste0( inTmp, "_anthro")  # label as noise??
-        detAll = rbind(detAll, tmp)
+        if (tmp$Label[1] != 0 & nrow(tmp) > 1) #no detections just file with start and end time!
+        {
+          tmp$Site = st
+          tmp$Dep  = dpl
+          tmp$Yr  = year(tmp$Start )
+          tmp$Mth = month(tmp$Start )
+          tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
+          tmp$DurH = tmp$DurS/3600
+          tmp$Type = paste0( inTmp, "_anthro") 
+          detAll = rbind(detAll, tmp)
+        }
         rm(tmp)
       } 
     } 
@@ -227,11 +228,10 @@ for (s in 1:length(inSites)  ) { # length(inSites)
       detTmp = detFiles[grepl(inTmp, detFiles)] 
       tmp   = read.csv(detTmp)
       if (length( colnames(tmp) ) == 3 ){
-        
         colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
         tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
         tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
-        if (tmp$Label != 0 & nrow(tmp) > 1) #no detections just file with start and end time!
+        if (tmp$Label[1] != 0 & nrow(tmp) > 1) #no detections just file with start and end time!
         {
           tmp$Site = st
           tmp$Dep  = dpl
@@ -254,16 +254,20 @@ for (s in 1:length(inSites)  ) { # length(inSites)
         colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
         tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
         tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
-        tmp$Site = st
-        tmp$Dep  = dpl
-        tmp$Yr  = year(tmp$Start )
-        tmp$Mth = month(tmp$Start )
-        tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
-        tmp$DurH = tmp$DurS/3600
-        tmp$Type = paste0( inTmp, "_anthro") 
-        detAll = rbind(detAll, tmp)
+        if (tmp$Label[1] != 0 & nrow(tmp) > 1) #no detections just file with start and end time!
+        {
+          tmp$Site = st
+          tmp$Dep  = dpl
+          tmp$Yr  = year(tmp$Start )
+          tmp$Mth = month(tmp$Start )
+          tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
+          tmp$DurH = tmp$DurS/3600
+          tmp$Type = paste0( inTmp, "_anthro") 
+          detAll = rbind(detAll, tmp)
+        }
+        
         rm(tmp)
-      } 
+      }
     } 
     
     ## plainfinmidshipman detections ####
@@ -274,16 +278,20 @@ for (s in 1:length(inSites)  ) { # length(inSites)
         colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
         tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
         tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
-        tmp$Site = st
-        tmp$Dep  = dpl
-        tmp$Yr  = year(tmp$Start )
-        tmp$Mth = month(tmp$Start )
-        tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
-        tmp$DurH = tmp$DurS/3600
-        tmp$Type = paste0( inTmp, "_bio") 
-        detAll = rbind(detAll, tmp)
+        if (tmp$Label[1] != 0 & nrow(tmp) > 1) #no detections just file with start and end time!
+        {
+          tmp$Site = st
+          tmp$Dep  = dpl
+          tmp$Yr  = year(tmp$Start )
+          tmp$Mth = month(tmp$Start )
+          tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
+          tmp$DurH = tmp$DurS/3600
+          tmp$Type = paste0( inTmp, "_anthro") 
+          detAll = rbind(detAll, tmp)
+        }
+        
         rm(tmp)
-      }  
+      }
     }
     
     ## explosions detections ####
@@ -294,18 +302,22 @@ for (s in 1:length(inSites)  ) { # length(inSites)
         colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
         tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
         tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
-        tmp$Site = st
-        tmp$Dep  = dpl
-        tmp$Yr  = year(tmp$Start )
-        tmp$Mth = month(tmp$Start )
-        tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
-        tmp$DurH = tmp$DurS/3600
-        tmp$Type = paste0( inTmp, "_anthro") 
-        detAll = rbind(detAll, tmp)
+        if (tmp$Label[1] != 0 & nrow(tmp) > 1) #no detections just file with start and end time!
+        {
+          tmp$Site = st
+          tmp$Dep  = dpl
+          tmp$Yr  = year(tmp$Start )
+          tmp$Mth = month(tmp$Start )
+          tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
+          tmp$DurH = tmp$DurS/3600
+          tmp$Type = paste0( inTmp, "_anthro") 
+          detAll = rbind(detAll, tmp)
+        }
+        
         rm(tmp)
-      } 
+      }
     }
-    
+      
     ## bocaccio detections ####
     if (inTmp == "bocaccio" ){
       detTmp = detFiles[grepl(inTmp, detFiles)] 
@@ -347,34 +359,68 @@ for (s in 1:length(inSites)  ) { # length(inSites)
     }
    
     
-    ## BLUE detections ####
+    ## blue whale detections ####
     if (inTmp== "bluewhale" ) {
       detTmp = detFiles[grepl(inTmp, detFiles)] 
       tmp = read.csv(detTmp)
-      if ( length( colnames(tmp) ) == 3 ){
+      
+      if ( length( colnames(tmp) ) == 3 ) {
         colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
-        tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
-        tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
-        tmp$Site = st
-        tmp$Dep  = dpl
-        tmp$Yr  = year(tmp$Start )
-        tmp$Mth = month(tmp$Start )
-        tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
-        tmp$DurH = tmp$DurS/3600
-        tmp$Type = paste0( inTmp, "_bio") 
-        detAll = rbind(detAll, tmp)
+        if (tmp$Label[1] != 0)  {
+          tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
+          tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" )
+          tmp$Site = st
+          tmp$Dep  = dpl
+          tmp$Yr  = year(tmp$Start )
+          tmp$Mth = month(tmp$Start )
+          tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
+          tmp$DurH = tmp$DurS/3600
+          tmp$Type = paste0( inTmp, "_bio") 
+          detAll = rbind(detAll, tmp)
+          rm(tmp)
+          
+          }
+        
+      } else if ( length( colnames(tmp) ) == 2 ) {
+        # only 2 columns- just start time of the detection....
+        colnames(tmp) = c("ISOStartTime","Label" )
+        
+        if (tmp$Label[1] != 0)  { 
+          tmp = as.data.frame ( cbind( tmp$ISOStartTime, tmp$ISOStartTime, tmp$Label) )
+          colnames(tmp) = c("ISOStartTime","ISOEndTime","Label" )
+          tmp$Start = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOStartTime)), tz = "GMT" )
+          tmp$End   = as.POSIXct( gsub(".000Z", "", gsub("T", " ", tmp$ISOEndTime)),   tz = "GMT" ) + 10
+          tmp$Site = st
+          tmp$Dep  = dpl
+          tmp$Yr  = year(tmp$Start )
+          tmp$Mth = month(tmp$Start )
+          tmp$DurS = as.numeric(as.character( difftime(tmp$End, tmp$Start, units = "secs" )) )
+          tmp$DurH = tmp$DurS/3600
+          tmp$Type = paste0( inTmp, "_bio")
+          detAll = rbind(detAll, tmp)
+        }
         rm(tmp)
-      } else{  rm(tmp) }   
+       
+      }
+      else {  rm(tmp) }   
     }
     
   }
   
+  # ## CHECK MATCHES WITH HMD ####
+  # uDays = unique( as.Date ( detAll$ISOStartTime) )
+  # dys = as.Date ( gsub (".csv","", sapply(strsplit( basename( inHMD ), "_"), "[[", 4) ), format="%Y%m%d" )
+  # i = which( dys == uDays[1])
+  # inFile = inHMD[i]
+  # tst = read.csv(inFile) 
+   
   #_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+
-  # MERGE DETS with HMD ####
+  ## MERGE DETS with HMD ####
   HMDdet = NULL
   ck2 = NULL
   utypes = unique(detAll$Type)
   HMDcheck = NULL
+  
   for (ii in 1:length(inHMD)){ #loop through daily files
     
     #read in daily file
@@ -393,7 +439,6 @@ for (s in 1:length(inSites)  ) { # length(inSites)
     # Check: length( unique( inHMDcsv$dateTime) ) # they are all unique!! wtf
     # extra rows happen when a minute has extra second 61 seconds for a given minute so splits into different rows
     # solution: only keep 00 seconds for a specific minute
-    # !!! start here !!! ####
     inHMDcsv$HR  = hour(inHMDcsv$dateTime)
     inHMDcsv$MIT = minute(inHMDcsv$dateTime)
     inHMDcsv$SEC = second(inHMDcsv$dateTime)
@@ -430,18 +475,30 @@ for (s in 1:length(inSites)  ) { # length(inSites)
     inHMDdata$Type = "none"
     
     # not all detections as labeled because only 1-day, not whole deployment
-    for (dd in 1: nrow(detAll) ){
+    for (dd in 1: nrow(detAll) )
+    {
+      
       # find all TOLs rows that fall with the detection period
-      idx =  which( inHMDdata$dateTime  >= detAll$Start[dd] &  inHMDdata$dateTime + 60 < detAll$End[dd] )
-      if(length(idx) > 0 ) {
-        # cat(dd, "\n") # run this to test for specific row with data
+      if ( detAll$DurS [dd] <= 60 )  # if detection is less than a minutes, need different logic... because only one row of data
+      {
+       ttime = as.POSIXct(  format ( detAll$Start[dd], "%Y-%m-%d %H:%M:00" )  , format = "%Y-%m-%d %H:%M:%S" , tz = "GMT")
+        
+       idx =  which( inHMDdata$dateTime  == ttime  )
+        
+      } else {
+        idx =  which( inHMDdata$dateTime  >= detAll$Start[dd] & inHMDdata$dateTime + 60 < detAll$End[dd] )
+      }
+      
+      if (length(idx) > 0 ) 
+      {
         inHMDdata$Dets[idx] =  inHMDdata$Dets[idx] + 1  #can be overlapping because all detections!
         inHMDdata$Type[idx] =  paste( inHMDdata$Type[idx], detAll$Type[dd] , sep = ";") # keep track of types
       }
+      
     }
-    
-    
-    #ck2 = rbind(ck2, c(as.character( dy), ck,length( unique( inHMDdata$FD ) ), length( unique( inHMDdata$VD ) ) ))
+
+   
+   #ck2 = rbind(ck2, c(as.character( dy), ck,length( unique( inHMDdata$FD ) ), length( unique( inHMDdata$VD ) ) ))
     
     cat("Processing... ",st," on " ,as.character( dy), "[", ii, " of ", length(inHMD)," days ]", ck, " minutes removed","\n" )
     cat("Detection types present: ", length( unique( inHMDdata$Type ) )-1 ,"\n" )
@@ -465,7 +522,7 @@ for (s in 1:length(inSites)  ) { # length(inSites)
     write.csv(inHMDdata , paste0(dirOut,"\\", inTmp, "_AS.csv" ) )
     
     HMDdet = rbind(HMDdet, inHMDdata)  # all data in one file--- way to big!
-  } ## !! end a daily loop !! ####
+  } ## !! end a daily loop
   
   colnames(HMDcheck) = c("FileName","MissingMins","secondsInFile_all","MinsRemoved","secondsInFile")
   write.csv(HMDcheck , paste0(dirOut,"\\", st,"_",dpl, "_HMDcheck_", ver,".csv" ) )
@@ -475,3 +532,8 @@ for (s in 1:length(inSites)  ) { # length(inSites)
   save(HMDdet, file = paste0(dirOut, "\\HMDdet_", st, "_", dpl, DC, "_", ver, ".Rda") )
   
 }
+
+
+unique( HMDdet$Type )
+unique( HMDdet$Bio )
+unique( HMDdet$Category )
