@@ -10,14 +10,16 @@ library(viridis)
 library(tidyverse)
 
 inDir = (  "F:\\SanctSound\\analysis\\combineFiles_AcousticScene" )
-inFiles = list.files( inDir, pattern = ".Rda", full.names = T)
+inFiles = list.files( inDir, pattern = "HMDdetLF", full.names = T)
 pltf = 0
+fqr = "LF"  #append this to output names
 
 for (f in 1: length(inFiles)) { # f = 6 for testing
   load( inFiles[f])
   
   #FORMATTTING ####
   st =  sapply(strsplit(basename( inFiles[f]), "_"), "[[", 2) #site name
+  cat("Processing... ", st, "(", f, " of ", length(inFiles), ") \n")
   efq = ncol(HMDdet)-5
   fq = as.numeric(as.character( gsub("X","", colnames(HMDdet[2:efq] )) ) ) # Frequency range: truncate to 100-2000 Hz
   AStime = HMDdet[, efq:ncol(HMDdet) ]
@@ -59,7 +61,7 @@ for (f in 1: length(inFiles)) { # f = 6 for testing
             plot.caption = element_text(size = 8) )
  
   p1
-  ggsave(p1, file = paste0(inDir, "\\AcousticScene_", st,".png"), width = 1500, height = 700, units = "px")
+  ggsave(p1, file = paste0(inDir, "\\AcousticScene_",fqr, "_" , st,".png"), width = 1500, height = 700, units = "px")
   
   # Median spectra for each day + Category ####
   udys = unique(HMDdet$Day)
@@ -86,14 +88,14 @@ for (f in 1: length(inFiles)) { # f = 6 for testing
     ylab("1-min HMD median")+ xlab("Frequency (Hz)")+
     ylim(c(50,100)) +
     theme_bw()+ 
-    ggtitle( st) +
+    ggtitle(paste0(st, " (only low-frequency sources)")) +
     theme(legend.position="top")+
     theme(text = element_text(size =10) )
   p2
-  ggsave(p2, file = paste0(inDir, "\\ASspectra_", st,".png"), width = 1500, height = 1000, units = "px")
+  ggsave(p2, file = paste0(inDir, "\\ASspectra_",fqr, "_", st,".png"), width = 1500, height = 1000, units = "px")
   
   ## PLOT 3: median + percentile spectra ####
- p3 =  ggplot(tst, aes(x=Fq, color=Category ) ) +
+  p3 =  ggplot(tst, aes(x=Fq, color=Category ) ) +
     geom_line(aes (y=mean.x), size = 1   ) + 
     geom_line(aes (y=lower.x),  alpha = .5,  size = 1 ) + #linetype="dotted",
     geom_line(aes (y=upper.x),  alpha = .5,  size = 1 ) +
@@ -105,7 +107,7 @@ for (f in 1: length(inFiles)) { # f = 6 for testing
     theme(legend.position="top")+ 
     theme(text = element_text(size =10) )
   p3
-  ggsave(p3, file = paste0(inDir, "\\ASspectraPer_", st,".png"), width = 1500, height = 1000, units = "px")
+  ggsave(p3, file = paste0(inDir, "\\ASspectraPer_",fqr, "_", st,".png"), width = 1500, height = 1000, units = "px")
   
   # Labeled spectra- one day ####
   
