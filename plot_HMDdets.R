@@ -15,6 +15,7 @@ pltf = 0
 fqr = "LF"  #append this to output names
 
 for (f in 1: length(inFiles)) { # f = 6 for testing
+  
   load( inFiles[f])
   
   #FORMATTTING ####
@@ -72,8 +73,8 @@ for (f in 1: length(inFiles)) { # f = 6 for testing
   HMDdet %>% group_by(Category,Mth) %>%  summarise(quantile = scales::percent(c(0.25, 0.5, 0.75)),  X125 = quantile(X125, c(0.25, 0.5, 0.75)))
   
   # all FQ
-  ed = ncol(HMDdet) - 7
-  tst = HMDdet %>% gather(key, value, 2:ed) %>% group_by(Category, key) %>% 
+  endCol = ncol(HMDdet) - 7
+  tst = HMDdet %>% gather(key, value, 2:endCol) %>% group_by(Category, key) %>% 
     dplyr::summarise(lower.x = quantile(value, probs = 0.25),
                      mean.x = quantile(value, probs = 0.5),
                      upper.x = quantile(value, probs = 0.75))
@@ -109,16 +110,18 @@ for (f in 1: length(inFiles)) { # f = 6 for testing
   p3
   ggsave(p3, file = paste0(inDir, "\\ASspectraPer_",fqr, "_", st,".png"), width = 1500, height = 1000, units = "px")
   
+  DC = Sys.Date()
+  save(tst, file = paste0(inDir, "\\HMDdetLF_Spectra_", st, "_", DC, ".Rda") )
+  
   # Labeled spectra- one day ####
   
   dy = "2019-04-11"
   tmpD = HMDdet[ HMDdet$Day == dy, ] 
-  ed = ncol(tmpD) - 7
   head(tmpD)
   ## PLOT extra: spectra for a given day ####
   if (pltf == 1) {
     
-    medSPLm = reshape::melt (tmpD, id.vars = c("dateTime", "Category"),  measure.vars = colnames(tmpD)[ 2 : ed ] )
+    medSPLm = reshape::melt (tmpD, id.vars = c("dateTime", "Category"),  measure.vars = colnames(tmpD)[ 2 : endCol ] )
     colnames( medSPLm)  = c("date", "AS", "Fq", "SPL")
     medSPLm$Fq = as.numeric(as.character( gsub("X","", medSPLm$Fq ) ) ) #head(medSPLm)
     
