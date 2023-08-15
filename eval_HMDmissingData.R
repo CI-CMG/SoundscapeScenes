@@ -17,7 +17,8 @@ for (f in 1:length(inFiles)) {
   deployment   = ( sapply(strsplit(basename( tmp$FileName), "_"), "[[", 2) ) 
   
   uniqueDays   = length(unique(tmp$Date))   # unique days in the dataset
-  remv  =  abs( sum( tmp$MinsRemoved ) )    # minutes removed across all files, because not 00 seconds
+  remv = sum( tmp$secondsInFile_all )- sum( tmp$secondsInFile )
+  # remv  =  abs( sum( tmp$MinsRemoved ) )    # minutes removed across all files, because not 00 seconds
   totalMinutes = sum(tmp$secondsInFile)/60  # total minutes sampled
   
   #How much data are missing in total?
@@ -38,5 +39,6 @@ for (f in 1:length(inFiles)) {
   
 }
 outFile = as.data.frame(outFile)
+
 
 sum(as.numeric( as.character( outFile$V3) ))

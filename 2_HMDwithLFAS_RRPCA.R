@@ -30,13 +30,12 @@ for (f in 1: length(inFiles)) { # f = 6 for testing
   HMDdet$Site = st
   Ambient = rbind (Ambient, HMDdet[HMDdet$Category == "Ambient",] )
 }
+
 #CHECKS
 unique(Ambient$Site)
 length( which(is.na(Ambient)))
-
 save(Ambient, file = paste0(dirOut, "\\RRPCA_HMD_allSites_", DC, ".Rda") )
-load( paste0(dirOut, "\\RRPCA_HMD_allSites_", DC, ".Rda" )) 
-     
+
 idNA = ( which(is.na(Ambient))) # check for NAs, as.data.frame( colnames( Ambient )[1:10] )
 idx  = grep("^X", colnames(Ambient))
 hix  = as.numeric( gsub("X","", names(Ambient)[idx]) )
@@ -45,9 +44,10 @@ NvP  = 10^(Nv/20)     #pressure values
 nvDate = Ambient$dateTime
 
 # truncate to 100-1kHz Acoustic Scene??
-NvPt = NvP[,1:698]
-Nv   = Nv[,1:698]
-hix  = hix[1:698]
+fe =  which(hix == 1001.2)
+NvPt = NvP[,1:fe]
+Nv   = Nv[ ,1:fe]
+hix  = hix[1:fe]
 
 #ANALYSIS ####
 # Robust principal components analysis separates a matrix into a low-rank plus sparse component
@@ -56,13 +56,22 @@ hix  = hix[1:698]
 lamd = max(NvPt)^-0.5 #default settings
 nvpcaTOL = rrpca(NvPt)
 sampleHours = nrow(NvP)
-
 save(nvpcaTOL, file = paste0(dirOut, "\\RRPCA_HMD_allSites_", DC, ".Rda") )
 
+# START HERE TO LOAD FILES
+load( paste0(dirOut, "\\Ambient_HMD_allSites_2023-08-11.Rda") )
+idx  = grep("^X", colnames(Ambient))
+hix  = as.numeric( gsub("X","", names(Ambient)[idx]) )
+Nv   =  Ambient[, idx] #dB values
+NvP  = 10^(Nv/20)     #pressure values
+NvP  = NvP[,1:698]
+Nv   = Nv[,1:698]
+hix  = hix[1:698]
+
+
+load( paste0(dirOut, "\\RRPCA_HMD_allSites_2023-08-11.Rda" )) 
+
 #SUMMARIZE OUTPUT ####
-#input data 
-input = ( NvP ) 
-Am = as.data.frame(input)   
 #low rank
 Lr = as.data.frame(nvpcaTOL$L) 
 colnames(Lr) = hix
@@ -77,21 +86,43 @@ colnames(SpDB) = hix
 # Values for each minute ####
 # sum of difference across frequencies for each minute
 LRdiff = as.data.frame ( rowSums( abs ( (LrDB - Nv) ) ) )
+colnames(LRdiff) = 'LRdiff'
+LRfq   = as.data.frame ( as.numeric ( colnames(LrDB) [apply(LrDB, 1, (which.max) )] ) )
+colnames(LRfq) = 'LRfq'
 # sum of sparce across frequencies for each minute
 SPsum = as.data.frame  ( rowSums( abs ( Sp ) ) )
-Ambient$LowRanK = as.numeric( as.character(LRdiff ))
-Ambient$Sparce  = as.numeric( as.character(SPsum  ))
-#cols = as.data.frame ( colnames(Ambient) )
+colnames(SPsum) = 'SPsum'
+
+# re-combine with Ambient matrix
+Ambient$LowRanK = as.numeric( as.character(LRdiff$LRdiff ) )
+Ambient$Sparce  = as.numeric( as.character(SPsum$SPsum  ) )
+Ambient$LRfq = LRfq$LRfq
+
+
+rm(tmp, tst, AmbientO)
 
 #RECOMBINE WITH Site Files ACOUSTIC SCENE FILES ####
 for (f in 1: length(inFiles)) { # f = 6 for testing
   
+  # all HMD data for a site
   load( inFiles[f])
   st =  sapply(strsplit(basename( inFiles[f]), "_"), "[[", 2) #site name
   HMDdet$Site = st
   
-  Ambient$Site
+  # WHY ARE THEIR DUPLICATED ROWS!!! with different values
+  which(  duplicated( HMDdet$dateTime))
+  HMDdet[16409 ,2 ]
+  HMDdet[16410 ,2 ]
+
+  # only Ambient data for a specific site
+  tmp =  Ambient[ Ambient$Site == st, c(1, 1006:1008)]
+
+  # merge data to include rrpca analysis results to HMD data
+  tst =  merge(HMDdet, tmp, by = "dateTime", all.x = T)
   
+  # write out new HMD+ file per site
+
+
 }
 
 #RECOMBINE WITH DAILY Site ACOUSTIC SCENE FILES ####

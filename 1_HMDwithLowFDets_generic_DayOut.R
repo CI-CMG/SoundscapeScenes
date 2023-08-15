@@ -308,6 +308,8 @@ for (s in 1:length(inSites)  ) { # length(inSites)
   
   for (ii in 1:length(inHMD)){ #loop through daily files
     
+   # basename( inHMD )
+    
     #read in daily file
     inFile = inHMD[ii]
     inHMDcsv = read.csv(inFile) # basename( inFile )
@@ -330,10 +332,14 @@ for (s in 1:length(inSites)  ) { # length(inSites)
     
     #remove any minutes that are not at 00 seconds
     iextra   = which( inHMDcsv$SEC == 0 ) # data to keep
-    
-    #HMDcheck  = rbind( HMDcheck, cbind(basename(inFile), ck, nrow(inHMDcsv), length(iextra) - nrow(inHMDcsv) ) ) 
     inHMDcsv2 = inHMDcsv[iextra ,]
-    HMDcheck  = rbind( HMDcheck, cbind(basename(inFile), ck, nrow(inHMDcsv), length(iextra) - nrow(inHMDcsv), nrow(inHMDcsv2) ) ) 
+    
+    #remove any minutes that are not full 60 seconds
+    ikeep = which( inHMDcsv2[,2] > 58 ) # which( inHMDcsv2[,2] < 59)
+    inHMDcsv2 = inHMDcsv2[ikeep ,]
+   dupTimes = sum( duplicated(inHMDcsv2$dateTime))
+    
+    HMDcheck  = rbind( HMDcheck, cbind(basename(inFile), ck, nrow(inHMDcsv), nrow(inHMDcsv2),dupTimes ) ) 
     
     #truncate HMD data
     inHMDdata = as.data.frame( inHMDcsv2[, c(1, str:ed )] )
@@ -409,10 +415,11 @@ for (s in 1:length(inSites)  ) { # length(inSites)
     HMDdet = rbind(HMDdet, inHMDdata)  # all data in one file--- way to big!
   } ## !! end a daily loop
   
-  colnames(HMDcheck) = c("FileName","MissingMins","secondsInFile_all","MinsRemoved","secondsInFile")
-  write.csv(HMDcheck , paste0(dirOut,"\\", st,"_",dpl, "_HMDcheck_", ver,".csv" ) )
-  
   DC = Sys.Date()
+  colnames(HMDcheck) = c("FileName","MissingMins","secondsInFile_all","secondsInFile","DuplicatedTimes")
+  write.csv(HMDcheck , paste0(dirOut,"\\", st,"_",dpl, "_HMDcheck_", ver,  "_", DC, ".csv" ) )
+  
+ 
   # as.data.frame( HMDdet %>% group_by(Category) %>% tally() )
   save(HMDdet, file = paste0(dirOut, "\\HMDdetLF_", st, "_", dpl, DC, "_", ver, ".Rda") )
   
