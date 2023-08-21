@@ -34,7 +34,7 @@ for (f in 1: length(inFiles)) { # f = 6 for testing
 #CHECKS
 unique(Ambient$Site)
 length( which(is.na(Ambient)))
-save(Ambient, file = paste0(dirOut, "\\RRPCA_HMD_allSites_", DC, ".Rda") )
+save(Ambient, file = paste0(dirOut, "\\Ambient_HMD_allSites_", DC, ".Rda") )
 
 idNA = ( which(is.na(Ambient))) # check for NAs, as.data.frame( colnames( Ambient )[1:10] )
 idx  = grep("^X", colnames(Ambient))
@@ -59,7 +59,8 @@ sampleHours = nrow(NvP)
 save(nvpcaTOL, file = paste0(dirOut, "\\RRPCA_HMD_allSites_", DC, ".Rda") )
 
 # START HERE TO LOAD FILES
-load( paste0(dirOut, "\\Ambient_HMD_allSites_2023-08-11.Rda") )
+load( paste0(dirOut, "\\Ambient_HMD_allSites_2023-08-15.Rda") )
+
 idx  = grep("^X", colnames(Ambient))
 hix  = as.numeric( gsub("X","", names(Ambient)[idx]) )
 Nv   =  Ambient[, idx] #dB values
@@ -68,8 +69,7 @@ NvP  = NvP[,1:698]
 Nv   = Nv[,1:698]
 hix  = hix[1:698]
 
-
-load( paste0(dirOut, "\\RRPCA_HMD_allSites_2023-08-11.Rda" )) 
+load( paste0(dirOut, "\\RRPCA_HMD_allSites_2023-08-14.Rda" )) 
 
 #SUMMARIZE OUTPUT ####
 #low rank
@@ -93,16 +93,13 @@ colnames(LRfq) = 'LRfq'
 SPsum = as.data.frame  ( rowSums( abs ( Sp ) ) )
 colnames(SPsum) = 'SPsum'
 
-# re-combine with Ambient matrix
+#RECOMBINE WITH Site Files ACOUSTIC SCENE FILES ####
 Ambient$LowRanK = as.numeric( as.character(LRdiff$LRdiff ) )
 Ambient$Sparce  = as.numeric( as.character(SPsum$SPsum  ) )
 Ambient$LRfq = LRfq$LRfq
 
-
-rm(tmp, tst, AmbientO)
-
-#RECOMBINE WITH Site Files ACOUSTIC SCENE FILES ####
-for (f in 1: length(inFiles)) { # f = 6 for testing
+RRPCAsumOUT = NULL
+for (f in 1: length(inFiles) ) { # f = 6 for testing
   
   # all HMD data for a site
   load( inFiles[f])
@@ -110,34 +107,33 @@ for (f in 1: length(inFiles)) { # f = 6 for testing
   HMDdet$Site = st
   
   # WHY ARE THEIR DUPLICATED ROWS!!! with different values
-  which(  duplicated( HMDdet$dateTime))
-  HMDdet[16409 ,2 ]
-  HMDdet[16410 ,2 ]
+  # which(  duplicated( HMDdet$dateTime))
 
   # only Ambient data for a specific site
   tmp =  Ambient[ Ambient$Site == st, c(1, 1006:1008)]
-
+  # nrow( HMDdet[HMDdet$Category == "Ambient", ]) 
+  
   # merge data to include rrpca analysis results to HMD data
   tst =  merge(HMDdet, tmp, by = "dateTime", all.x = T)
-  
+  #hist( tst$LRfq )
+  #hist( tst$LowRanK )
+  #hist( tst$Sparce )
+  RRPCAsum = as.data.frame ( rbind ( quantile(tst$LowRanK, na.rm = T),
+  quantile(tst$LRfq, na.rm = T),
+  quantile(tst$Sparce, na.rm = T) ) )
+  RRPCAsum$Site = st
+  RRPCAsum$RRPCAmetric = c("LR-sum","LR-freq","SP-sum")
+    RRPCAsumOUT = rbind(RRPCAsumOUT, RRPCAsum )
   # write out new HMD+ file per site
+    
+    save(tst, file = paste0(dirOut, "\\HMDdetsRpca_", st, "_", DC, ".Rda") )
+    
+
+ }
+RRPCAsumOUT
 
 
-}
-
-#RECOMBINE WITH DAILY Site ACOUSTIC SCENE FILES ####
-# not complete
-inFilesDay = list.files( inDir, pattern = "DAILY_MILLIDEC_MinRes_LFAS.csv", full.names = T)
-
-for (f in 1: length(inFilesDay)) { # f = 6 for testing
-  
-  zmp = read.csv ( inFilesDay[f])
-
-  st =  sapply(strsplit(basename( inFilesDay[f]), "_"), "[[", 1) #site name
-  
-}
-
-
+## NOT USED ####
 # TRUNCATE TO FIGURE OUT WHAT IS GOING ON ####
 tLrDB = LrDB[1:100,]
 tSpDB = Sp[1:100,]
@@ -174,6 +170,20 @@ pS = ggplot(SPMO, aes(X1, value, group = as.factor(X2)))+
   xlab("Frequency (HMD)") + ylab("1-min HMD")+
   theme_minimal()
 pS
+
+
+#RECOMBINE WITH DAILY Site ACOUSTIC SCENE FILES ####
+# not complete
+inFilesDay = list.files( inDir, pattern = "DAILY_MILLIDEC_MinRes_LFAS.csv", full.names = T)
+
+for (f in 1: length(inFilesDay)) { # f = 6 for testing
+  
+  zmp = read.csv ( inFilesDay[f])
+  
+  st =  sapply(strsplit(basename( inFilesDay[f]), "_"), "[[", 1) #site name
+  
+}
+
 
 # IS there sparce detection present-- how to summmarize?
 library(dplyr)

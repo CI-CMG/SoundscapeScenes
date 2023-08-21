@@ -40,14 +40,19 @@ ver = "manta_9.6.14"
 
 # GENERAL INFORMATION ####
 # run this to get summery of detections
+HMDcolnames = NULL
+cnt = 0
+cntdul = 0
+cnt00 = 0
 for (s in 1:length(inSites)  ) { #  1:length(inSites) s = 1
   
   
   inS = inSites[s] 
   inDir = paste0(dirTop, "//", inS, "//", ver)
   
-  #inDir  = choose.dir(default = dirTop , caption = "Site directory with HMD csv files" ) # GR01_01
   inHMD =  list.files(path = inDir, pattern = "MinRes.csv", full.names = T,recursive = T)
+  cnt = cnt + length(inHMD) 
+  
   st = sapply(strsplit(basename( inHMD [1] ), "_"), "[[", 1) #site name
   dpl = sapply(strsplit(basename( inHMD[1] ), "_"), "[[", 2) # deployment name
   dirSite = dirname(inHMD[1])
@@ -56,7 +61,34 @@ for (s in 1:length(inSites)  ) { #  1:length(inSites) s = 1
   #ver = strsplit( gsub("^.*[\\]", "", inHMD[1] ),"/" )[[1]] [1]
   
   cat("Processing..." , inS, "-", length(inHMD), " HMD files,", ver)
- 
+  
+  # check headers of all HMD files
+  for (h in 1:length(inHMD)) {
+    header <- read.csv(inHMD[h])
+    
+    #check duplicated dates
+    colnames(header)[1] = "dateTime"
+    header$dateTime = as.POSIXct(   header$dateTime, format = "%d-%b-%Y %H:%M:%S" , tz = "GMT" )
+    timeDupl = sum( duplicated ( header$dateTime ))
+    mon00 = sum( second( header$dateTime) > 0 )
+    if (timeDupl > 0) {
+      cntdul = cntdul +  timeDupl 
+      cat("Duplicated mins:", basename(inHMD[h]) , "\n") 
+    }
+    if (mon00 > 0) {
+      cnt00 = cnt00 +  mon00 
+      cat("not 00 files:", basename(inHMD[h]) , "\n" ) 
+    }
+    
+    #check header naming
+    # cat( colnames(header)[1:3],"\n")
+    # HMDcolnames = rbind(HMDcolnames, c( colnames(header)[1:3],st ) ) 
+    
+  }
+  #HMDcolnames = as.data.frame(HMDcolnames)
+  #uvals=unique( HMDcolnames$V2)
+  #HMDcolnames[HMDcolnames$V2 == uvals[2],]
+
   dirDets = paste0(dirSite,"\\detections\\")
   detFiles = list.files(path = dirDets, pattern = paste(st,dpl,sep="_"), full.names = T, recursive = T)
   detFiles = detFiles[!grepl("1d", detFiles)] #remove 1 day files
