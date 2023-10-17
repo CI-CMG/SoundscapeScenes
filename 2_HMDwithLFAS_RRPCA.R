@@ -16,6 +16,8 @@ library(rsvd)
 #GET DATA ####
 inDir = (  "F:\\SanctSound\\analysis\\combineFiles_AcousticScene" )
 inFiles = list.files( inDir, pattern = "HMDdetLF", full.names = T)
+inFiles = list.files( inDir, pattern = "HMDdetLF", full.names = T, recursive = T)
+
 pltf = 0
 fqr  = "LF"  #append this to output names
 site = "All"

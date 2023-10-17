@@ -70,18 +70,23 @@ for (f in 1:length(inFiles)) {
   }
   train_matrix  <-  other_matrix[indices_to_sample, ]
   #CHECK: nrow(train_matrix) - length(unique(train_matrix$dateTime)) 
+  TRAIN  = rbind(TRAIN, train_matrix)
   
-  # get samples for VALID data
+  # VALID data
   rows_to_keep <- rep(TRUE, num_rows)
   rows_to_keep[indices_to_sample] <- FALSE
   valid_matrix  <-  other_matrix[rows_to_keep, , drop = FALSE]
   #CHECK: nrow(valid_matrix) - length(unique(valid_matrix$dateTime)) 
+  VALID  = rbind(VALID, valid_matrix)
   
-  
-  cat(basename( inFiles[f] ), ":", pT ," % TRAIN",  pK," % KEEP \n" )
+  cat( basename( inFiles[f] ), 
+      "test=", nrow(keep_matrix), " ",
+      "train", nrow(train_matrix)," ",
+      "valid= ", nrow(valid_matrix)," ",
+      " \n" )
 }
 
- 
+rm( keep_matrix, other_matrix, sampled_rows, train_matrix,tst, valid_matrix) 
   
 # FORMATTING FOR NNET (.mat format) ####
 TRAIN$CategoryN = ifelse(TRAIN$Category== "Ambient", 1, 

@@ -1,5 +1,7 @@
 # PLOT HMDdet
 
+# by site results
+
 rm(list=ls()) 
 
 library(data.table)
@@ -11,6 +13,7 @@ library(tidyverse)
 
 inDir = (  "F:\\SanctSound\\analysis\\combineFiles_AcousticScene" )
 inFiles = list.files( inDir, pattern = "HMDdetLF", full.names = T)
+inFiles
 pltf = 0
 fqr = "LF"  #append this to output names
 
@@ -63,6 +66,15 @@ for (f in 1: length(inFiles)) { # f = 6 for testing
  
   p1
   ggsave(p1, file = paste0(inDir, "\\AcousticScene_",fqr, "_" , st,".png"), width = 1500, height = 700, units = "px")
+  
+  # why is there a long segment of ambient???-- it is real
+  tmp = AS [AS$Hours >120, ]
+  pt = ggplot(AS, aes(x=Start, y=Hours, color = Category)) +
+    geom_point() 
+  
+  tmp2 = HMDdet [HMDdet$Day >= "2019-02-16" & HMDdet$Day < "2019-02-17", ]
+  tmp2 = subset(tmp2, select= c('Day','dateTime','Category'))
+  # just really long ambient sections... RRPCA breaks it up a bit
   
   # Median spectra for each day + Category ####
   udys = unique(HMDdet$Day)
