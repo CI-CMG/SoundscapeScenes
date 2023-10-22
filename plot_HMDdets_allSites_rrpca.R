@@ -35,12 +35,39 @@ totalMinsBio = 0
 totalMinsBoth = 0
 totalMinsAnthro= 0
 
-for (f in 1: length(inFiles)) { # f = 6 for testing
+for (f in 1: length(inFiles)) { # f = 8 for testing
   
   load( inFiles[f])
+  head(tst)
+  
   st =  sapply(strsplit(basename( inFiles[f]), "_"), "[[", 2) #site name
   tst$Site = st
   totalMins = totalMins + nrow(tst)
+  
+  #WIND-- ONLY SB03
+  inDirW = (  "F:\\SanctSound\\analysis\\ERDAP_wind" )
+  inFilesW = list.files( inDirW, pattern = "env", full.names = T)
+  WINDdata = read.csv(inFilesW)
+  
+  #as.data.frame(colnames( WINDdata) )
+  WINDdata$time = gsub("[+]00:00", "", WINDdata$time )
+  WINDdata$dateTime = as.POSIXct( WINDdata$time, format = "%Y-%m-%d %H:%M:%S" , tz = "GMT")
+  WINDdata$yr = year(WINDdata$dateTime)
+  WINDdata = WINDdata[WINDdata$yr == "2020",]
+  ixd = which(!is.na(WINDdata$wind_speed))
+  WINDdata = WINDdata[ixd, ]
+  
+  tst$wind_speed = NA
+  tst$sea_water_temperature = NA
+  tst$sea_surface_wave_significant_height = NA
+  
+  for (ww in 1:nrow(WINDdata) ){ # ww = 3000
+    idx = which (tst$dateTime >= WINDdata$dateTime[ww] & tst$dateTime < (WINDdata$dateTime[ww] + (60*60) ) )  
+    tst$wind_speed[idx] =  WINDdata$wind_speed[ww] 
+    tst$sea_water_temperature[idx] =  WINDdata$sea_water_temperature[ww] 
+    tst$sea_surface_wave_significant_height[idx] =  WINDdata$sea_surface_wave_significant_height[ww] 
+  }
+  #unique(tst$wind_speed)
   
   #ADD Ambient+ category
   #quantile (tst$Sparce, c(0.25,0.50,0.75),na.rm = T )  # sum over all frequencies
@@ -52,24 +79,33 @@ for (f in 1: length(inFiles)) { # f = 6 for testing
   thrSP = round( quantile (tst$Sparce, .75, na.rm = T )) # expect sparce to be higher
   thrLR = round( quantile (tst$LowRanK, .25,na.rm = T )) # but low rank not as much because wind speed might be driving the super high values
   
+  unique( tst$Category)
   tst$Category2 = tst$Category
   idx =  ( which( tst$Sparce > thrSP) ) # length(idx)
   idx =  ( which( tst$LowRanK > thrLR & tst$Sparce > thrSP) ) # length(idx)
   #unique( tst$Category[idx] )
   tst$Category2[idx] = "Ambient+"
   (unique( tst$Category2))
+  
+  #add wind category
+  idxW = which( tst$wind_speed > 10)
+  tst$windCat = "low"
+  tst$windCat[idxW] = "high"
+  unique( tst$windCat)
+  tst$Category3 = paste(tst$windCat, tst$Category2, sep = "_" )
+  
   #PLOT temporal patterns with Ambient+ category
   # get start and end of different AS, so segment works for plotting
-  tst = tst %>%  mutate(test = case_when(Category2 == lag(Category2) ~ "No", TRUE ~ "Yes"))
+  tst = tst %>%  mutate(test = case_when(Category3 == lag(Category3) ~ "No", TRUE ~ "Yes"))
   idx = which(tst$test == "Yes") #start of new scene
-  
+ 
   AS = NULL
   AS$Start    = tst$dateTime[idx]
-  AS$Category = tst$Category2[idx]
+  AS$Category = tst$Category3[idx]
   AS$End      = c(  tst$dateTime[ idx[2:length(idx) ] - 1 ] , tst$dateTime[nrow(tst)]  )
   AS$Hours    = as.numeric( as.character( difftime(AS$End, AS$Start, units = "hours") ))
   
-  tal = as.data.frame( tst %>% group_by(Category2) %>% tally() )
+  tal = as.data.frame( tst %>% group_by(Category3) %>% tally() )
   tal$PerTime = round( (tal$n/ sum(tal$n) * 100) , digits = 2 )
   tal
   AS$mth = month(AS$Start)
@@ -84,10 +120,12 @@ for (f in 1: length(inFiles)) { # f = 6 for testing
     xlab("")+  ylab("")+ 
     ggtitle(paste("Acoustic Scenes at ", st, " (1-min, RRPCA)", sep = "") )  +
     labs(caption = (paste0("% time in each category: ", 
-                           tal$Category[1], "=", tal$PerTime[1], " | ", 
-                           tal$Category[2], "=", tal$PerTime[2], " | ",
-                           tal$Category[3], "=", tal$PerTime[3], " | ",
-                           tal$Category[4], "=", tal$PerTime[4] ))) +
+                           tal$Category[1], "=", round(tal$PerTime[1]), "% | ", 
+                           tal$Category[2], "=", round(tal$PerTime[2]), "% | ",
+                           tal$Category[3], "=", round(tal$PerTime[3]), "% | ",
+                           tal$Category[4], "=", round(tal$PerTime[4]), "% | ",
+                           tal$Category[5], "=", round(tal$PerTime[5]), "% | ",
+                           tal$Category[6], "=", round(tal$PerTime[6]), "%"))) +
     scale_color_gradientn(colours = viridis(10))+
     #facet_wrap(~mth) +
     theme(  axis.text.y = element_text(size = 10, colour="black"),

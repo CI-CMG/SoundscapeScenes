@@ -26,7 +26,7 @@ dirOut = "F:\\SanctSound\\analysis\\combineFiles_AcousticScene"
 
 #PREP DATA ####
 Ambient = NULL
-for (f in 1: length(inFiles)) { # f = 6 for testing
+for (f in 1: length(inFiles)-1 ) { # f = 6 for testing
   load( inFiles[f])
   st =  sapply(strsplit(basename( inFiles[f]), "_"), "[[", 2) #site name
   HMDdet$Site = st
