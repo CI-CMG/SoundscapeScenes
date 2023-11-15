@@ -34,7 +34,8 @@ totalMinsAnthro= 0
 
 # PROCESSS BY SITE ####
 #for (f in 1: length(inFiles)) { 
-f = 2 #one site at a time
+inFiles
+f = 7 #one site at a time
 load( inFiles[f])
 head(HMDdet)
 st =  sapply(strsplit(basename( inFiles[f]), "_"), "[[", 3) #site name
