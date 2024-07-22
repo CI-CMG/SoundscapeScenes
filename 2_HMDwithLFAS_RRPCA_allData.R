@@ -5,7 +5,7 @@
 
 rm(list=ls()) 
 
-library(data.table)
+#library(data.table)
 library(ggplot2)
 library(lubridate)
 library(dplyr)
@@ -29,9 +29,13 @@ dirOut = "F:\\SanctSound\\analysis\\combineFiles_AcousticScene"
 RRPCAsumOUT = NULL # summary of percentiles for each site
 
 # LOOP through sites ####
-for (f in 1: (length(inFiles)-1) )  {
+
+for (f in 1:(length(inFiles)) )  { # f = 12
+  
   load( inFiles[f])
-  st =  sapply(strsplit(basename( inFiles[f]), "_"), "[[", 2) #site name
+  #st =  sapply(strsplit(basename( inFiles[f]), "_"), "[[", c(2,3) ) #site name
+  st = substr(basename( inFiles[f]), 10,16)
+  
   HMDdet$Site = st
   cat("Processing ", basename( inFiles[f]) ,"\n")
   
@@ -55,9 +59,11 @@ for (f in 1: (length(inFiles)-1) )  {
   lamd = max(NvPt)^-0.5 #default settings
   nvpcaTOL = rrpca(NvPt)
   sampleHours = nrow(NvP)
+  
   save(nvpcaTOL, file = paste0(dirOut, "\\RRPCA_HMD_allSites_", st, "_", DC, ".Rda") )
   
   ## (option to load rrpca results here) ####
+  # load(paste0(dirOut, "\\RRPCA_HMD_allSites_SB03_17","_", DC, ".Rda") )
   
   ## RRPCA results ####
   #low rank
@@ -99,4 +105,5 @@ for (f in 1: (length(inFiles)-1) )  {
  
 } # end site loop
 
-save(RRPCAsum, file = paste0(dirOut, "\\RRPCAsum_bySite", "_", DC, ".Rda") )
+#save(RRPCAsum, file = paste0(dirOut, "\\RRPCAsum_bySite", "_", DC, ".Rda") )
+save(RRPCAsumOUT, file = paste0(dirOut, "\\RRPCAsum_SB03_2021", "_", DC, ".Rda") )

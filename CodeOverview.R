@@ -1,6 +1,11 @@
 # OVERVIEW ACOUSTIC SCENE ANALYSIS 
 # SITES: c( "CI04_02", "GR01_01", "HI04_02", "MB02_02", "OC02_02", "PM02_01","SB01_02", "SB03_08")
 
+# PURPOSE:
+""
+# input: 
+# output:
+
 inDir   = "F:\\SanctSound\\" 
 outDIR  = "F:\SanctSound\analysis\combineFiles_AcousticScene"
 codeDir = "F:\CODE\GitHub\SoundscapeScenes"
@@ -47,8 +52,9 @@ codeDir = "F:\CODE\GitHub\SoundscapeScenes"
 # input: "HMDdetsRpca"
 # output: NOT COMPLETE!!
 
-
-# PURPOSE:
-""
-# input: 
-# output:
+# SITES- AU_CHO1
+# 1_HMD_withDETs-CH01 
+# PURPOSE: add columns with detections types to the HDM netCDF files.. including season
+# output: csv files for each day
+# 1_HMD_withDETsAS-CH01 
+# output: csv file with all data labeled 

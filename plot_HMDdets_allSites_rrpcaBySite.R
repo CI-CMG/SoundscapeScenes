@@ -5,7 +5,7 @@
 
 rm(list=ls()) 
 
-library(data.table)
+#library(data.table)
 library(ggplot2)
 library(lubridate)
 library(dplyr)
@@ -35,7 +35,7 @@ totalMinsAnthro= 0
 # PROCESSS BY SITE ####
 #for (f in 1: length(inFiles)) { 
 inFiles
-f = 7 #one site at a time
+f = 8 #one site at a time
 load( inFiles[f])
 head(HMDdet)
 st =  sapply(strsplit(basename( inFiles[f]), "_"), "[[", 3) #site name
@@ -84,6 +84,10 @@ idx =  ( which( HMDdet$LowRanK > thrLR & HMDdet$Sparce > thrSP) ) # length(idx)
 #unique( tst$Category[idx] )
 HMDdet$Category2[idx] = "Ambient+"
 (unique( HMDdet$Category2))
+
+ggplot(HMDdet, aes(LowRanK)) +
+  geom_histogram(binwidth=1) +
+  facet_wrap(~Category2)
 
 #add wind category
 if (length(inFilesW) >0 ) {

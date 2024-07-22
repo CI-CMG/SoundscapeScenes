@@ -1,0 +1,109 @@
+# Formate/trim HMD files (Rdat)
+# user decides on detection types and frequency range
+# one site at a time
+
+# INPUT
+#directory of NCEI netCDF HMD files
+
+# OUTPUT
+#HMD in Rdat with specific frequency range data (Rdat)
+
+# NEXT
+#write out a new netCDF file with the detections for other programs
+
+rm(list=ls()) 
+
+# LIBRARIES ####
+library(tidyverse)
+library(readxl)
+library(dplyr)
+library(ncdf4)
+
+# PARAMS ####
+siteN = "AU_CH01"
+siteN = "SB03"
+target_valueIn = 4 # change this to the value you're searching for in quality matrix
+frq_range = c(100, 1997.6)
+LB = "LF" #what label do you want to indicate on the ouutput file, LF = low frequency
+DC = Sys.Date()
+flagHMDall = 0
+
+# DIRS ####
+gdrive = "G:\\.shortcut-targets-by-id\\1QAlmQwj6IS-J6Gw2PRNQR6jz_4qA5CYZ\\"
+dirOut =  paste0( gdrive, "SoundCoop_AcousticScene\\CombineData\\A_outputHMDDETS" )
+
+# HMD FILES ####
+if (siteN == "AU_CH01") {
+  inDir   = paste0(  "F:\\SoundCoop\\hmd_downloadedGCP\\", siteN, "\\ALL" )
+  inFiles = list.files( inDir, pattern = "MinRes", full.names = T, recursive = T)
+} else {
+  inDir   = paste0(  "F:\\SoundCoop\\hmd_downloadedGCP\\", siteN )
+  inFiles = list.files( inDir, pattern = "MinRes", full.names = T, recursive = T)
+}
+
+# PROCESS FILES ####
+HmdTrim = NULL
+
+for(fil in 1:length(inFiles)) { # fil=1
+  
+  ## READ in HMD netCDF files ####
+  nc <- nc_open(inFiles[fil])
+  f =  t( as.data.frame( ncvar_get(nc, "frequency")   ) )
+  myPSD <- ( ncvar_get(nc, "psd")   )
+  qualityMat <- ncvar_get(nc, "quality_flag")   
+  target_value <- target_valueIn  
+  indices <- which(qualityMat == target_value, arr.ind = TRUE)
+  row_indices <- indices[, 1]
+  col_indices <- indices[, 2]
+  myPSD[row_indices, col_indices] <- NA
+  myPSD <- as.data.frame( myPSD  )
+  time <- ncvar_get(nc, "time")
+  myTime <- as.data.frame( as.POSIXct(time, origin = "1970-01-01", tz = "UTC") )
+  myPSD <- t( as.data.frame( myPSD  ) )
+  
+  inHMDdata = cbind(myTime,myPSD)
+  colnames(inHMDdata) = c("dateTime",f)
+  nc_close(nc)
+  tmpDate = unique( as.Date(inHMDdata$dateTime) )
+  
+  ## WRITE out file ####
+  if (flagHMDall == 1 ) {
+    result <- str_match(basename(inFiles[fil]) , "^(.*)_(\\d{8})_(.*)\\.nc$")
+    # write out as netCDF HMD+
+    write.csv(inHMDdata , paste0(dirOut,"\\", result[2], "_", result[3], "_", result[4],"_Trim.csv" ) )
+  }
+  
+  ## TIME CHECK ####
+  ck = dim(inHMDdata)[1] # how many minutes in the daily file
+
+  colnames(inHMDdata)[1] = "dateTime"
+  inHMDdata$dateTime = as.POSIXct(   inHMDdata$dateTime, format = "%Y-%m-%d %H:%M:%S" , tz = "GMT" ) 
+  inHMDdata$HR  = hour(inHMDdata$dateTime)
+  inHMDdata$MIT = minute(inHMDdata$dateTime)
+  inHMDdata$SEC = second(inHMDdata$dateTime)
+  #remove any minutes that are not at 00 seconds
+  iextra   = which( inHMDdata$SEC == 0 ) # data to keep
+  inHMDdata = inHMDdata[iextra ,]
+  
+  ## FREQUENCY OF INTEREST ####
+  str = which(colnames(inHMDdata)== frq_range[1] )     
+  ed  = which(colnames(inHMDdata)== frq_range[2] )  # colnames(inHMDdata)[ed]
+  inHMDdata = as.data.frame( inHMDdata[ , c(1, str:ed) ] )
+
+  ## COMBINE Rdata output ####
+  cat("Processing... ", fil, " of", length(inFiles), " for ", as.character(tmpDate), "(", ck, "out of 1440 mins)", "\n")
+  HmdTrim= rbind(HmdTrim, inHMDdata)
+  
+}
+
+# OUTPUTS ####
+## Rdat file ####
+save(HmdTrim, file = paste0(dirOut, "\\", siteN, "_Hmd_",LB, "_", DC) )
+
+## SUMMARY PLOT ####
+
+
+
+
+
+

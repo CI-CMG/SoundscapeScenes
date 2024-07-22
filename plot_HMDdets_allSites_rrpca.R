@@ -47,6 +47,7 @@ for (f in 1: length(inFiles)) { # f = 8 for testing
   #WIND-- ONLY SB03
   inDirW = (  "F:\\SanctSound\\analysis\\ERDAP_wind" )
   inFilesW = list.files( inDirW, pattern = "env", full.names = T)
+  inFilesW = inFilesW[!grepl(st, inFilesW)]
   WINDdata = read.csv(inFilesW)
   
   #as.data.frame(colnames( WINDdata) )
@@ -87,7 +88,7 @@ for (f in 1: length(inFiles)) { # f = 8 for testing
   tst$Category2[idx] = "Ambient+"
   (unique( tst$Category2))
   
-  #add wind category
+   #add wind category
   idxW = which( tst$wind_speed > 10)
   tst$windCat = "low"
   tst$windCat[idxW] = "high"
@@ -145,7 +146,53 @@ for (f in 1: length(inFiles)) { # f = 8 for testing
   totalMinsBio = totalMinsBio + nrow(tst[tst$Category == "Bio",])
   totalMinsBoth = totalMinsBoth + nrow(tst[tst$Category == "Bio+Anthro",])
   totalMinsAnthro= totalMinsAnthro + nrow(tst[tst$Category == "Anthro",])
-}
+  
+  # plot showing the comparision of RRPCA values and acoustic scenes
+  # create new category- from Category3- 
+  # "high_Ambient+" "high_Ambient"  "low_Ambient"   "low_Ambient+"  "low_Anthro"  
+  # "high_Ambient"  "low_Ambient"  "low_Anthro" , "high  _Anthro" ) 
+  
+  dim(tst)
+  head(tst)
+  unique(tst$Category4)
+  unique(tst$LowRanK)
+  unique(tst$Sparce)
+  # why so many NAs!!!
+  idx1 = which(is.na(tst), arr.ind=TRUE)
+  unique(idx1[,2]) 
+  idx = which(is.na(tst$LowRanK), arr.ind=TRUE)
+  colnames(tst)[1006   ]
+  tst[875, 1006]
+  
+  # remove those or use previous thresholds
+  idx =  ( which( tst$LowRanK > thrLR & tst$Sparce > thrSP) ) # length(idx)
+  tst$CatoryRRPCA = "LowRank"
+  tst$CatoryRRPCA[idx] = "Sparce"
+  tst$CatoryAS = paste(tst$windCat, tst$Category, sep = "_" ) 
+  unique(tst$CatoryRRPCAw)
+  unique(tst$CatoryAS)
+  summary(tst[, 1000:1019])
+  is.na( tst$wind_speed )
+  hist( tst$wind_speed )
+  
+  ggplot(tst, aes(x=factor(CatoryAS))) +
+    geom_bar(aes(fill=factor(CatoryRRPCA), y=..prop.., group=factor(CatoryRRPCA)), position="dodge") +
+    theme_miniml()
+  
+  ggplot(tst, aes( x=factor(CatoryAS), fill = CatoryRRPCA) )+
+    geom_bar() +
+    theme_minimal()
+  
+ tmp = as.data.frame( tst[ tst$CatoryAS == "high_Ambient",  1000:1019] )
+ 
+  ggplot(tmp, aes(  fill = CatoryRRPCA) )+
+    geom_bar() +
+    theme_minimal()
+  
+  
+ }
+
+
 endCol = ncol(Ambient) - 11 # 
 colnames(Ambient)[endCol]
 colnames(Ambient)[1]
