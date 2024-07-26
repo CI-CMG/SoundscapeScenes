@@ -43,11 +43,15 @@ LB = "LF" #what label do you want to indicate on the ouutput file, LF = low freq
 HmdDets$season <- factor(HmdDets$season, ordered = TRUE, levels = c("form", "ice", "break", "open"))
 # unique( HmdDets$season)
 idNA = ( which(is.na(HmdDets)))
-numeric_columns <- grep("^\\d", names( HmdDets) )  
-hix = names( HmdDets)[numeric_columns]
-Nv   =  HmdDets[, numeric_columns]  #dB values
+#truncate frequency to 100-1000 Hz
+stp = which( names( HmdDets) ==  "1001.2")
+HmdDets2 = HmdDets[,1:stp]
+numeric_columns <- grep("^\\d", names( HmdDets2) ) 
+hix = names( HmdDets2)[numeric_columns]
+
+Nv   =  HmdDets2[, numeric_columns]  #dB values
 NvP  = 10^(Nv/20)     #pressure values
-nvDate = HmdDets$dateTime
+nvDate = HmdDets2$dateTime
 sampleHours = nrow(NvP)
 
 ## RRPCA ####
@@ -56,7 +60,7 @@ sampleHours = nrow(NvP)
 # and a sparse component S
 lamd = max(NvP)^(-rrpca1) #default settings
 nvpcaTOL = rrpca(NvP)
-save(nvpcaTOL, file = paste0(dirOut, "\\", siteN,  "_RrpcaResults_", DC, ".Rda") )
+save(nvpcaTOL, file = paste0(dirOut, "\\", siteN,  "_RrpcaResults_100-1000Hz", DC, ".Rda") )
 # load( paste0(dirOut, "\\", "AU_CH01_RrpcaResults_2024-06-24.Rda") )
 
 ## results ####
@@ -65,6 +69,8 @@ Lr = as.data.frame(nvpcaTOL$L)
 colnames(Lr) = hix
 LrDB = 10*log10( Lr^2 )  #CHECK: median(LrDB$'100'), no negative values, just values without transients
 colnames(LrDB) = hix
+
+
 
 #sparse matrix
 Sp = as.data.frame(nvpcaTOL$S) 
@@ -101,6 +107,80 @@ ggplot(data = HmdDets, aes(x = LowRanK, Sparce, color = LRfq)) +
   ggtitle("How soundscape conditions group by season")+
   theme_minimal()+
   theme(text = element_text(size = 16) )
+
+
+### scatter by season, category & RRPCA values ####
+HmdDets$season
+HmdDets$LRfq
+HmdDets$Day = as.Date(HmdDets$dateTime)
+
+# Custom function to calculate median and standard error
+custom_fun <- function(x) {
+  n <- length(x)
+  c(median = median(x), se = sd(x) / sqrt(n))
+}
+quantile_25_75 <- function(x) {
+  quantile(x, probs = c(0.25, 0.75))
+}
+
+result_dplyr <- HmdDets %>%
+  group_by(Day, season) %>%
+  summarise(
+    LowRankDiff = mean(LowRanK, na.rm = TRUE),
+    se = sd(LowRanK, na.rm = TRUE) / sqrt(n())
+  )
+as.data.frame(result_dplyr)
+
+ggplot(data = result_dplyr, aes(x = Day, y = LowRankDiff, color = season)) +
+  geom_point(size = 2) + 
+  ggtitle("How residual soundscape conditions changes")+
+  theme_minimal()+
+  theme(text = element_text(size = 16) )
+
+ggplot(data = result_dplyr, aes(x = Day, y = LowRankDiff, color = season)) +
+  geom_point(size = 1) + 
+  geom_errorbar(aes(ymin = LowRankDiff - se, ymax = LowRankDiff + se), width = 0.2) +
+  ggtitle("How residual soundscape condition changes") +
+  xlab("")+ ylab("Summed difference between low-rank and origional data") +
+  labs(subtitle = "Higher values indicate more transient sounds present") +
+  theme_minimal() +
+  theme(text = element_text(size = 16))
+
+# Calculate Residual sound levels for seasons, months, and daily across time
+## ? ADD 25/75 ####
+LrDB$Day = HmdDets$Day
+LrDB$season = HmdDets$season  
+
+RSoundscape = aggregate( LrDB[,hix], by = list(Season = LrDB$season), FUN = (median) )
+RSoundscape = as.data.frame(RSoundscape)
+melted_df50 <- reshape2::melt(RSoundscape, id.vars = c("Season"),  measure.vars = hix ) 
+colnames(melted_df50)
+melted_df50$Fq = as.numeric(as.character(melted_df50$variable))
+ggplot()+
+  geom_line(data = melted_df50, aes(x = Fq, y = value, color = Season, group = Season), size = 2 ) +
+  scale_x_log10() +
+  #scale_color_manual(values = c("FA19" = "black", "FA20" = "#0072B2","FA21" = "#D55E00","SP19" = "black","SP20" = "#0072B2","SP21" = "#D55E00")) +
+  #facet_wrap(~Season)+
+  theme_minimal() +
+  theme(
+    text = element_text(size = 12),  # Set all text to size 16
+    axis.title = element_text(size = 12),  # Axis titles
+    axis.text = element_text(size = 12),  # Axis labels
+    legend.text = element_text(size = 12),  # Legend text
+    strip.text = element_text(size = 12)  # Facet labels
+  ) +
+  labs(
+    title = "",
+    x = "Frequency (Hz)",
+    
+    y =expression(paste("Residual Sound Pressure Level (dB re: 1", mu, "Pa)"))
+  )
+
+# What about different of origional from the median low rank...
+# subtract each row by the Residual 
+# START HERE ####
+LRdiff = as.data.frame ( rowSums( abs ( (LrDB - Nv) ) ) )
+
 
 ## THRESHOLDS ####
 # lowrank = sum difference across frequencies and 15th percentile of all values

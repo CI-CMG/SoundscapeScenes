@@ -24,7 +24,7 @@ library(ncdf4)
 
 # PARAMS ####
 siteN = "AU_CH01"
-siteN = "SB03"
+# siteN = "SB03"
 flagHMDall = 0 # make 1 if you want to write out HMD+ files with all the data
 target_valueIn = 4 # change this to the value you're searching for in quality matrix
 frq_range = c(100, 1997.6)
@@ -220,6 +220,7 @@ HmdDetsT = as.data.frame( HmdDets[, c(1, str:ed, dets, season_columns ) ] )
 HmdDets = HmdDetsT # in case I mess up
 
 ## SUMMARY PLOT ####
+# spectra by unique labels
 numeric_columns = grep("^\\d", names(HmdDets) )  
 hix = names(HmdDets)[numeric_columns]
 useason = unique(HmdDets$season)
