@@ -154,7 +154,6 @@ LrDB$season = HmdDets$season
 RSoundscape = aggregate( LrDB[,hix], by = list(Season = LrDB$season), FUN = (median) )
 RSoundscape = as.data.frame(RSoundscape)
 melted_df50 <- reshape2::melt(RSoundscape, id.vars = c("Season"),  measure.vars = hix ) 
-colnames(melted_df50)
 melted_df50$Fq = as.numeric(as.character(melted_df50$variable))
 ggplot()+
   geom_line(data = melted_df50, aes(x = Fq, y = value, color = Season, group = Season), size = 2 ) +
@@ -176,9 +175,16 @@ ggplot()+
     y =expression(paste("Residual Sound Pressure Level (dB re: 1", mu, "Pa)"))
   )
 
-# What about different of origional from the median low rank...
-# subtract each row by the Residual 
 # START HERE ####
+# What about different of original from the median low rank?
+# subtract each row and frequency column by the residual matrix- 
+# do I want the absolute value? maybe not because values 
+# below the mean might be interesting too- an increase in less than might mean
+# a decrease in some source... 
+# ORG - LR (positive- means higher than LR, which should be the case??) 
+
+
+
 LRdiff = as.data.frame ( rowSums( abs ( (LrDB - Nv) ) ) )
 
 
