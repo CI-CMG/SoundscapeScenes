@@ -88,7 +88,7 @@ for (ii in 1: length (inFilesModel) ){
     xlab("")+ ylab("Summed difference \n low-rank and origional data") +
     labs(subtitle = "Higher values indicate more transient sounds present", color = "Month") +
     theme_minimal() +
-    ylim(c(50,95)) +
+    #ylim(c(50,95)) +
     theme(text = element_text(size = 15),
           plot.subtitle = element_text(face = "italic"),
           plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
