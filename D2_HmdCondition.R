@@ -165,7 +165,7 @@ for (ii in 1: length (inFilesModel) ){
     geom_line(data = melted_df75, aes(x = Fq, y = value),  linewidth = .3, alpha = .5, linetype = "dashed" ) +
     scale_x_log10() +     facet_wrap(~Season)+
     labs(subtitle = "Low-rank representation of sound levels", color = "Month") +
-    theme_minimal() +     ylim(c(60,95))+
+    theme_minimal() +     ylim(c(50,95))+
     theme( text = element_text(size = 15),  # Set all text to size 16
       plot.subtitle = element_text(face = "italic")  ) +
     labs(  title = paste0(site, " Residual Soundscape Condition"),
@@ -187,4 +187,30 @@ for (ii in 1: length (inFilesModel) ){
   
   Rout = rbind(Rout, RSoundscapeT)
 } 
+
+DC = Sys.Date()
 save(Rout, file = paste0(dirOut, "\\", siteN, "_RRPCA", "_", DC, ".Rda") )
+
+# PLOT ALL SITES
+Rout = as.data.frame(Rout)
+rownames(Rout)
+library(tibble)
+Rout = rownames_to_column(Rout, var = "quantiles")
+
+colnames(Rout)
+melted_Rout = reshape2::melt(Rout, id.vars = c("Site", "quantiles"),  measure.vars = hix ) 
+melted_Rout$Fq = as.numeric(as.character(melted_Rout$variable))
+melted_Rout$Quant= as.factor(as.character(sapply(strsplit(melted_Rout$quantiles, "%"), `[`, 1) ))
+
+melted_RoutT=  melted_Rout %>% filter(!Quant %in% c("0", "100", "25", "75"))
+
+ggplot() +
+  geom_line(data = melted_RoutT, aes(x = Fq, y = value, group = interaction(Site, Quant), 
+                                    color = Site, linetype = Quant), linewidth = 1) +
+  labs(subtitle = "Low-rank representation of sound levels") +
+  theme_minimal() +     ylim(c(55,85))+
+  theme( text = element_text(size = 15),  # Set all text to size 16
+         plot.subtitle = element_text(face = "italic")  ) +
+  labs(  title = "Residual Soundscape Condition",
+         x = "Frequency (Hz)",
+         y =expression(paste("Residual Sound Pressure Level (dB re: 1", mu, "Pa)"))     )
