@@ -22,6 +22,8 @@ library(ncdf4)
 # PARAMS ####
 siteN = "AU_CH01"
 siteN = "SB03"
+siteN = "CaseStudy2"
+siteN = "ESONS"
 target_valueIn = 4 # change this to the value you're searching for in quality matrix
 frq_range = c(100, 1997.6)
 LB = "LF" #what label do you want to indicate on the ouutput file, LF = low frequency
@@ -36,15 +38,28 @@ dirOut =  paste0( gdrive, "SoundCoop_AcousticScene\\CombineData\\A_outputHMDDETS
 if (siteN == "AU_CH01") {
   inDir   = paste0(  "F:\\SoundCoop\\hmd_downloadedGCP\\", siteN, "\\ALL" )
   inFiles = list.files( inDir, pattern = "MinRes", full.names = T, recursive = T)
-} else {
+} else if (siteN == "SB03"){
   inDir   = paste0(  "F:\\SoundCoop\\hmd_downloadedGCP\\", siteN )
   inFiles = list.files( inDir, pattern = "MinRes", full.names = T, recursive = T)
+} else if (siteN == "subSet_CaseStudy2"){
+  inDir   = paste0(  "F:\\SoundCoop\\hmd_downloadedGCP\\", siteN )
+  inFiles = list.files( inDir, pattern = "MinRes", full.names = T, recursive = T)
+  
+} else if (siteN == "CaseStudy2" | siteN == "ESONS"){
+  inDir   = paste0(  "F:\\SoundCoop\\hmd_downloadedGCP\\", siteN )
+  inDirs = list.dirs(inDir)
+  inDirs
+  #need to loop through directorys... create a loop!
+  inFiles = list.files( inDirs[1], pattern = "MinRes", full.names = T, recursive = T)
+  inFiles
 }
 
 # PROCESS FILES ####
 HmdTrim = NULL
 
 for(fil in 1:length(inFiles)) { # fil=1
+  split_string = str_split(basename(inFiles[fil]), "_")[[1]]
+  site =  split_string[1]
   
   ## READ in HMD netCDF files ####
   nc <- nc_open(inFiles[fil])
@@ -81,6 +96,8 @@ for(fil in 1:length(inFiles)) { # fil=1
   inHMDdata$HR  = hour(inHMDdata$dateTime)
   inHMDdata$MIT = minute(inHMDdata$dateTime)
   inHMDdata$SEC = second(inHMDdata$dateTime)
+  inHMDdata$site =site
+  
   #remove any minutes that are not at 00 seconds
   iextra   = which( inHMDdata$SEC == 0 ) # data to keep
   inHMDdata = inHMDdata[iextra ,]
@@ -88,17 +105,24 @@ for(fil in 1:length(inFiles)) { # fil=1
   ## FREQUENCY OF INTEREST ####
   str = which(colnames(inHMDdata)== frq_range[1] )     
   ed  = which(colnames(inHMDdata)== frq_range[2] )  # colnames(inHMDdata)[ed]
-  inHMDdata = as.data.frame( inHMDdata[ , c(1, str:ed) ] )
+  st  =  which(colnames(inHMDdata)== "site" )
+  inHMDdata = as.data.frame( inHMDdata[ , c(1, st, str:ed) ] )
 
   ## COMBINE Rdata output ####
   cat("Processing... ", fil, " of", length(inFiles), " for ", as.character(tmpDate), "(", ck, "out of 1440 mins)", "\n")
+  
   HmdTrim= rbind(HmdTrim, inHMDdata)
   
 }
 
 # OUTPUTS ####
 ## Rdat file ####
-save(HmdTrim, file = paste0(dirOut, "\\", siteN, "_Hmd_",LB, "_", DC) )
+if (siteN == "CaseStudy2" | siteN == "ESONS"){
+  save(HmdTrim, file = paste0(inDir, "\\", site, "_Hmd_",LB, "_", DC) )
+
+}else{
+  save(HmdTrim, file = paste0(dirOut, "\\", siteN, "_Hmd_",LB, "_", DC) ) }
+
 
 ## SUMMARY PLOT ####
 
