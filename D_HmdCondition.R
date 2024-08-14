@@ -26,6 +26,7 @@ library(rlang)
 siteN = "AU_CH01"
 siteN = "SB03"
 siteN = "CaseStudy2"
+siteN = "AU_CH01-all"
 
 # DATA PREP ####
 if (siteN == "AU_CH01"){
@@ -45,7 +46,7 @@ if (siteN == "AU_CH01"){
   inFiles = list.files( dirIn, pattern = filepat, recursive = F, full.names = T )
   load( inFiles )
   
-}else if (siteN == "CaseStudy2"){
+}else if (siteN == "CaseStudy2" | siteN == "AU_CH01-all"){
   filepat = "_Hmd_LF_"# "_HmdLabels_LF_"
   voi= "site" #variable of interst
   gdrive = "F:\\SoundCoop\\hmd_downloadedGCP\\"
@@ -54,13 +55,20 @@ if (siteN == "AU_CH01"){
   dirOut = dirIn
 }
 
-
-if ((siteN == "CaseStudy2")){
+# RUN RRPCA on all sites or years
+if ((siteN == "CaseStudy2" | siteN == "AU_CH01-all")){
   
   for (ii in 1:length(inFiles)) {
+    
     # site name
     split_string <- strsplit(basename( inFiles[ii]), "_")[[1]]
-    site <- split_string[1]
+    if (siteN == "CaseStudy2"){
+      site <- split_string[1]
+      
+    }else {
+      site <- split_string[2]
+    }
+    cat("Processing...", site, ii, " of ", length(inFiles))
     
     # load & format data
     load( inFiles[ii] )
@@ -90,7 +98,7 @@ if ((siteN == "CaseStudy2")){
     nvpcaTOL = rrpca(NvP)
     
     # save output ####
-    save(nvpcaTOL, file = paste0(dirOut, "\\", site,  "_RrpcaResults_100-1000Hz", DC, ".Rda") )
+    save(nvpcaTOL, file = paste0(dirOut, "\\", site,  "_RrpcaResults_100-1000Hz_", DC, ".Rda") )
     
     
   }
@@ -126,7 +134,7 @@ if ((siteN == "CaseStudy2")){
   # and a sparse component S
   lamd = max(NvP)^(-rrpca1) #default settings
   nvpcaTOL = rrpca(NvP)
-  save(nvpcaTOL, file = paste0(dirOut, "\\", siteN,  "_RrpcaResults_100-1000Hz", DC, ".Rda") )
+  save(nvpcaTOL, file = paste0(dirOut, "\\", siteN,  "_RrpcaResults_100-1000Hz_", DC, ".Rda") )
 
 }
 
