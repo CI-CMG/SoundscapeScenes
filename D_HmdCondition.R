@@ -52,6 +52,7 @@ if (siteN == "AU_CH01"){
   gdrive = "F:\\SoundCoop\\hmd_downloadedGCP\\"
   dirIn =  paste0( gdrive, siteN )
   inFiles = list.files( dirIn, pattern = filepat, recursive = F, full.names = T )
+  dirs = inFiles
   dirOut = dirIn
 }
 
