@@ -52,14 +52,13 @@ if (siteN == "AU_CH01"){
   gdrive = "F:\\SoundCoop\\hmd_downloadedGCP\\"
   dirIn =  paste0( gdrive, siteN )
   inFiles = list.files( dirIn, pattern = filepat, recursive = F, full.names = T )
-  dirs = inFiles
   dirOut = dirIn
 }
 
 # RUN RRPCA on all sites or years
 if ((siteN == "CaseStudy2" | siteN == "AU_CH01-all")){
   
-  for (ii in 1:length(inFiles)) {
+  for (ii in 2:length(dirs)) {
     
     # site name
     split_string <- strsplit(basename( inFiles[ii]), "_")[[1]]
