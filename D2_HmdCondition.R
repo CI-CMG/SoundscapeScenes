@@ -23,6 +23,8 @@ quantile_25_75 <- function(x) {
 siteN = "CaseStudy2"
 siteN = "AU_CH01-all"
 voi= "mth" #variable of interst
+moi = 10
+moiN = "October"
 gdrive = "F:\\SoundCoop\\hmd_downloadedGCP\\"
 dirIn =  paste0( gdrive, siteN )
 filepat = "_RrpcaResults_"# "_HmdLabels_LF_"
@@ -32,6 +34,8 @@ inFilesData = list.files( dirIn, pattern = filepat, recursive = F, full.names = 
 dirOut = dirIn
 
 Rout = NULL
+Rmth= NULL
+
 for (ii in 1: length (inFilesModel) ){
  
   #original data
@@ -182,15 +186,31 @@ for (ii in 1: length (inFilesModel) ){
   
   
   ### Spectra site (save data) ####
+
   RSoundscapeT = apply(LrDB[,hix], 2, quantile, probs = c(0, 0.25, 0.5, 0.75, 1))
   RSoundscapeT = as.data.frame( RSoundscapeT )
   RSoundscapeT$Site = site
-  
+  RSoundscapeT$minutes = nrow(LrDB)
   Rout = rbind(Rout, RSoundscapeT)
+  colnames(RSoundscapeT)
+  
+  ### Spectra site (save data) ####
+  colnames(LrDB)
+  LrDBT  = LrDB[LrDB$mth == moi,]
+  
+  RSoundscapeM = apply(LrDBT[,hix], 2, quantile, probs = c(0, 0.25, 0.5, 0.75, 1))
+  RSoundscapeM = as.data.frame( RSoundscapeM )
+  RSoundscapeM$Site = site
+  RSoundscapeM$mth = moi
+  RSoundscapeM$minutes = nrow(LrDBT)
+  colnames(RSoundscapeM)
+  Rmth = rbind(Rmth, RSoundscapeM)
+  
 } 
 
 DC = Sys.Date()
 save(Rout, file = paste0(dirOut, "\\", siteN, "_RRPCA", "_", DC, ".Rda") )
+save(Rmth, file = paste0(dirOut, "\\", siteN, "_RRPCA-", moi, "_", DC, ".Rda") )
 
 # PLOT ALL SITES/years ####
 Rout = as.data.frame(Rout)
@@ -262,3 +282,61 @@ plot_2010 <- ggplot(data_2010) +
 # Arrange plots side by side or on top of each other
 library(gridExtra)
 grid.arrange(plot_2000, plot_2010, ncol = 1)
+
+# CHO1- modify plot- Rmth ####
+# select separate decades for just October results
+Rmth = rownames_to_column(Rmth, var = "quantiles")
+Rmth$yr <- as.numeric(as.character( sapply(strsplit(Rmth$Site, "-"), function(x) x[3])))
+melted_Rout = reshape2::melt(Rmth, id.vars = c("Site", "quantiles","yr"),  measure.vars = hix ) 
+melted_Rout$Fq = as.numeric(as.character(melted_Rout$variable))
+melted_Rout$Quant= as.factor(as.character(sapply(strsplit(melted_Rout$quantiles, "%"), `[`, 1) ))
+melted_RoutT=  melted_Rout %>% filter(!Quant %in% c("0", "100", "25", "75"))
+# Filter data for each decade
+melted_RoutT$decade <- "2000"
+melted_RoutT$decade[melted_RoutT$yr > 2012] <- "2010"
+data_2000 <- melted_RoutT[melted_RoutT$decade == "2000", ]
+data_2010 <- melted_RoutT[melted_RoutT$decade == "2010", ]
+
+# Plot for 2000s decade
+ldata <- data.frame(
+  x1 = c(94, 94, 94, 94, 94), 
+  y1 = data_2000$value[data_2000$Fq == 100], 
+  lb = data_2000$yr[data_2000$Fq == 100]
+)
+plot_2000 <- ggplot() +
+  geom_line(data = data_2000, aes(x = Fq, y = value, group = interaction(Site, Quant), 
+                color = Site, linetype = Quant), linewidth = 1) +
+  geom_text(data = ldata, aes(x = x1, y = y1, label = lb),size = 2, fontface = "bold") +
+  theme_minimal() +
+  ylim(c(55, 95)) +
+  theme(text = element_text(size = 15), 
+        plot.subtitle = element_text(face = "italic")) +
+  labs(subtitle = paste0("2000s: Low-rank representation of sound levels-", moiN)) +
+  labs(title = "Residual Soundscape Condition (2000s)",
+       x = "Frequency (Hz)",
+       y = expression(paste("Residual Sound Pressure Level (dB re: 1", mu, "Pa)")))
+
+# Plot for 2010s decade
+ldata <- data.frame(
+  x1 = c(94, 94, 94, 94, 94), 
+  y1 = data_2010$value[data_2010$Fq == 100], 
+  lb = data_2010$yr[data_2010$Fq == 100]
+)
+plot_2010 <- ggplot() +
+  geom_line(data = data_2010, aes(x = Fq, y = value, group = interaction(Site, Quant), 
+                color = Site, linetype = Quant), linewidth = 1) +
+ 
+  geom_text(data = ldata, aes(x = x1, y = y1, label = lb),size = 2, fontface = "bold") +
+  labs(subtitle = paste0("2010s: Low-rank representation of sound levels-", moiN)) +
+  theme_minimal() +
+  ylim(c(55, 95)) +
+  theme(text = element_text(size = 15), 
+        plot.subtitle = element_text(face = "italic")) +
+  labs(title = "Residual Soundscape Condition (2010s)",
+       x = "Frequency (Hz)",
+       y = expression(paste("Residual Sound Pressure Level (dB re: 1", mu, "Pa)")))
+
+# Arrange plots side by side or on top of each other
+library(gridExtra)
+grid.arrange(plot_2000, plot_2010, ncol = 1)
+
