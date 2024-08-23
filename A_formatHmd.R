@@ -25,26 +25,32 @@ siteN = "SB03"
 siteN = "CaseStudy2"
 siteN = "ESONS"
 siteN = "AU_CH01-all"
+siteN = "test"
+siteN = "NRS01"
 target_valueIn = 4 # change this to the value you're searching for in quality matrix
 frq_range = c(100, 1997.6)
 LB = "LF" #what label do you want to indicate on the ouutput file, LF = low frequency
 DC = Sys.Date()
 flagHMDall = 0
+flagYrs = 0
 
 # DIRS ####
 gdrive = "G:\\.shortcut-targets-by-id\\1QAlmQwj6IS-J6Gw2PRNQR6jz_4qA5CYZ\\"
 dirOut =  paste0( gdrive, "SoundCoop_AcousticScene\\CombineData\\A_outputHMDDETS" )
 
 # HMD FILES ####
-if (siteN == "AU_CH01") {
+if (siteN == "AU_CH01" ) {
   inDir   = paste0(  "F:\\SoundCoop\\hmd_downloadedGCP\\", siteN, "\\ALL" )
   inFiles = list.files( inDir, pattern = "MinRes", full.names = T, recursive = T)
-} else if (siteN == "SB03"){
+  inDirs = inDir
+} else if (siteN == "SB03"| siteN == "test" ){
   inDir   = paste0(  "F:\\SoundCoop\\hmd_downloadedGCP\\", siteN )
   inFiles = list.files( inDir, pattern = "MinRes", full.names = T, recursive = T)
+  inDirs = inDir
 } else if (siteN == "subSet_CaseStudy2"){
   inDir   = paste0(  "F:\\SoundCoop\\hmd_downloadedGCP\\", siteN )
   inFiles = list.files( inDir, pattern = "MinRes", full.names = T, recursive = T)
+  inDirs = inDir
   
 } else if (siteN == "CaseStudy2" | siteN == "ESONS"){
   inDir   = paste0(  "F:\\SoundCoop\\hmd_downloadedGCP\\", siteN )
@@ -53,54 +59,56 @@ if (siteN == "AU_CH01") {
   #need to loop through directorys... create a loop!
   inFiles = list.files( inDirs[1], pattern = "MinRes", full.names = T, recursive = T)
   inFiles
-} else if (siteN == "AU_CH01-all"){
+} else if (siteN == "AU_CH01-all"| siteN == "NRS01"){
   inDir   = paste0(  "F:\\SoundCoop\\hmd_downloadedGCP\\", siteN )
   inDirs = list.dirs(inDir)
   #create subfolder for each year...and move files
   inFiles = list.files( inDirs[1], pattern = "MinRes", full.names = T, recursive = T)
   years = unique( substr( sapply(strsplit(basename(inFiles),"_" ),`[`,4), 1,4) )
-  setwd(inDirs)
-  for (year in years) {
-    dir_name <- as.character(year)
-    if (!dir.exists(dir_name)) {  # Check if the directory already exists
-      dir.create(dir_name)
-      cat("Created directory:", dir_name, "\n")
-    } else {
-      cat("Directory already exists:", dir_name, "\n")
-    }
-  }
   
-  # Move files to corresponding directories
-  for (file in inFiles) {
-    # Extract year from the filename
-    file_year <- substr(sapply(strsplit(basename(file), "_"), `[`, 4), 1, 4)
-    
-    # Check if the year is within the specified range
-    if (file_year %in% as.character(years)) {
-      # Construct the target directory path
-      target_dir <- file.path(file_year)
-      
-      # Move the file
-      file.rename(file, file.path(target_dir, basename(file)))
-      cat("Moved file:", file, "to", file.path(target_dir, basename(file)), "\n")
-    } else {
-      cat("Skipping file:", file, "due to year not in range\n")
+  if (flagYrs == 1 ){ 
+    setwd(inDirs)
+    for (year in years) {
+      dir_name <- as.character(year)
+      if (!dir.exists(dir_name)) {  # Check if the directory already exists
+        dir.create(dir_name)
+        cat("Created directory:", dir_name, "\n")
+      } else {
+        cat("Directory already exists:", dir_name, "\n")
+      }
     }
-  }
+    
+    # Move files to corresponding directories
+    for (file in inFiles) {
+      # Extract year from the filename
+      file_year <- substr(sapply(strsplit(basename(file), "_"), `[`, 4), 1, 4)
+      
+      # Check if the year is within the specified range
+      if (file_year %in% as.character(years)) {
+        # Construct the target directory path
+        target_dir <- file.path(file_year)
+        
+        # Move the file
+        file.rename(file, file.path(target_dir, basename(file)))
+        cat("Moved file:", file, "to", file.path(target_dir, basename(file)), "\n")
+      } else {
+        cat("Skipping file:", file, "due to year not in range\n")
+      }
+    }}
+  
   
   inDirs = list.dirs(inDir)
-  #yy = 5
-  #inFiles = list.files( inDirs[yy], pattern = "MinRes", full.names = T, recursive = T)
+  
 }
 
-for (yy in 6 :length(inDirs)){
+for (yy in 2 : length(inDirs) ){
   
   inFiles = list.files( inDirs[yy], pattern = "MinRes", full.names = T, recursive = T)
   
   # PROCESS FILES ####
   HmdTrim = NULL
   
-  for(fil in 1:length(inFiles)) { # fil=1
+  for(fil in 1:length(inFiles)) { # fil=2
     split_string = str_split(basename(inFiles[fil]), "_")[[1]]
     site =  split_string[1]
     
@@ -165,7 +173,7 @@ for (yy in 6 :length(inDirs)){
     save(HmdTrim, file = paste0(inDir, "\\", site, "_Hmd_",LB, "_", DC) )
   }else if (siteN == "AU_CH01") {
     save(HmdTrim, file = paste0(dirOut, "\\", siteN, "_Hmd_",LB, "_", DC) ) 
-  }else if (siteN == "AU_CH01-all") {
+  }else if (siteN == "AU_CH01-all" | siteN == "NRS01") {
     save(HmdTrim, file = paste0(inDir, "\\", siteN,"-", years[yy-1], "_Hmd_",LB, "_", DC) ) 
   }
   

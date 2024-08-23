@@ -27,6 +27,7 @@ siteN = "AU_CH01"
 siteN = "SB03"
 siteN = "CaseStudy2"
 siteN = "AU_CH01-all"
+siteN = "NRS01"
 
 # DATA PREP ####
 if (siteN == "AU_CH01"){
@@ -46,27 +47,29 @@ if (siteN == "AU_CH01"){
   inFiles = list.files( dirIn, pattern = filepat, recursive = F, full.names = T )
   load( inFiles )
   
-}else if (siteN == "CaseStudy2" | siteN == "AU_CH01-all"){
+}else if (siteN == "CaseStudy2" | siteN == "AU_CH01-all" | siteN == "NRS01" ){
   filepat = "_Hmd_LF_"# "_HmdLabels_LF_"
   voi= "site" #variable of interst
   gdrive = "F:\\SoundCoop\\hmd_downloadedGCP\\"
   dirIn =  paste0( gdrive, siteN )
   inFiles = list.files( dirIn, pattern = filepat, recursive = F, full.names = T )
   dirOut = dirIn
+  dirs = inFiles
 }
 
 # RUN RRPCA on all sites or years
-if ((siteN == "CaseStudy2" | siteN == "AU_CH01-all")){
+if ((siteN == "CaseStudy2" | siteN == "AU_CH01-all" | siteN == "NRS01")){
   
-  for (ii in 2:length(dirs)) {
+  for (ii in 1: length(dirs)) {
     
-    # site name
-    split_string <- strsplit(basename( inFiles[ii]), "_")[[1]]
+    # site name or site-year name
+    split_string = strsplit(basename( inFiles[ii]), "_")[[1]]
     if (siteN == "CaseStudy2"){
-      site <- split_string[1]
-      
+      site=split_string[1]
+    }else if  (siteN == "NRS01") {
+      site=split_string[1]
     }else {
-      site <- split_string[2]
+      site=split_string[2]
     }
     cat("Processing...", site, ii, " of ", length(inFiles))
     
