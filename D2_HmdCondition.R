@@ -22,9 +22,8 @@ quantile_25_75 <- function(x) {
 # GET DATA ####
 siteN = "CaseStudy2"
 siteN = "AU_CH01-all"
-voi= "mth" #variable of interst
-moi = 10
-moiN = "October"
+siteN = "NRS01"
+
 gdrive = "F:\\SoundCoop\\hmd_downloadedGCP\\"
 dirIn =  paste0( gdrive, siteN )
 filepat = "_RrpcaResults_"# "_HmdLabels_LF_"
@@ -32,6 +31,11 @@ inFilesModel = list.files( dirIn, pattern = filepat, recursive = F, full.names =
 filepat ="_Hmd_LF_"# _HmdLabels_LF_"
 inFilesData = list.files( dirIn, pattern = filepat, recursive = F, full.names = T )
 dirOut = dirIn
+
+
+voi= "mth" #variable of interst
+moi = 10
+moiN = "October"
 
 Rout = NULL
 Rmth= NULL
