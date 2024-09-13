@@ -69,7 +69,7 @@ p = ggplot(melted_df, aes(x = fq, y = dateTime, fill = ValueR)) +
   theme_minimal()
 
 #p
-#ggplotly(p)
+ggplotly(p)
 
 
 p = ggplot(melted_df, aes(x = ValueR, y = ..density..)) +

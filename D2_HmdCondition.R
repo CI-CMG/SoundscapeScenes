@@ -233,7 +233,7 @@ ggplot() +
   geom_line(data = melted_RoutT, aes(x = Fq, y = value, group = interaction(Site, Quant), 
                                     color = Site, linetype = Quant), linewidth = 1) +
   labs(subtitle = "Low-rank representation of sound levels") +
-  theme_minimal() +     ylim(c(55,85))+
+  theme_minimal() +     ylim(c(55,80))+
   theme( text = element_text(size = 15),  # Set all text to size 16
          plot.subtitle = element_text(face = "italic")  ) +
   labs(  title = "Residual Soundscape Condition",
@@ -286,6 +286,7 @@ plot_2010 <- ggplot(data_2010) +
 # Arrange plots side by side or on top of each other
 library(gridExtra)
 grid.arrange(plot_2000, plot_2010, ncol = 1)
+plot_2000
 
 # CHO1- modify plot- Rmth ####
 # select separate decades for just October results
@@ -343,4 +344,63 @@ plot_2010 <- ggplot() +
 # Arrange plots side by side or on top of each other
 library(gridExtra)
 grid.arrange(plot_2000, plot_2010, ncol = 1)
+
+
+# NRS01- modify plot- Rmth ####
+# select separate decades for just October results
+Rmth = rownames_to_column(Rmth, var = "quantiles")
+Rmth$yr <- as.numeric(as.character( sapply(strsplit(Rmth$Site, "-"), function(x) x[3])))
+melted_Rout = reshape2::melt(Rmth, id.vars = c("Site", "quantiles","yr"),  measure.vars = hix ) 
+melted_Rout$Fq = as.numeric(as.character(melted_Rout$variable))
+melted_Rout$Quant= as.factor(as.character(sapply(strsplit(melted_Rout$quantiles, "%"), `[`, 1) ))
+melted_RoutT=  melted_Rout %>% filter(!Quant %in% c("0", "100", "25", "75"))
+# Filter data for each decade
+melted_RoutT$decade <- "2000"
+melted_RoutT$decade[melted_RoutT$yr > 2012] <- "2010"
+data_2000 <- melted_RoutT[melted_RoutT$decade == "2000", ]
+data_2010 <- melted_RoutT[melted_RoutT$decade == "2010", ]
+
+# Plot for 2000s decade
+ldata <- data.frame(
+  x1 = c(94, 94, 94, 94, 94), 
+  y1 = data_2000$value[data_2000$Fq == 100], 
+  lb = data_2000$yr[data_2000$Fq == 100]
+)
+plot_2000 <- ggplot() +
+  geom_line(data = data_2000, aes(x = Fq, y = value, group = interaction(Site, Quant), 
+                                  color = Site, linetype = Quant), linewidth = 1) +
+  geom_text(data = ldata, aes(x = x1, y = y1, label = lb),size = 2, fontface = "bold") +
+  theme_minimal() +
+  ylim(c(55, 95)) +
+  theme(text = element_text(size = 15), 
+        plot.subtitle = element_text(face = "italic")) +
+  labs(subtitle = paste0("2000s: Low-rank representation of sound levels-", moiN)) +
+  labs(title = "Residual Soundscape Condition (2000s)",
+       x = "Frequency (Hz)",
+       y = expression(paste("Residual Sound Pressure Level (dB re: 1", mu, "Pa)")))
+
+# Plot for 2010s decade
+ldata <- data.frame(
+  x1 = c(94, 94, 94, 94, 94), 
+  y1 = data_2010$value[data_2010$Fq == 100], 
+  lb = data_2010$yr[data_2010$Fq == 100]
+)
+plot_2010 <- ggplot() +
+  geom_line(data = data_2010, aes(x = Fq, y = value, group = interaction(Site, Quant), 
+                                  color = Site, linetype = Quant), linewidth = 1) +
+  
+  geom_text(data = ldata, aes(x = x1, y = y1, label = lb),size = 2, fontface = "bold") +
+  labs(subtitle = paste0("2010s: Low-rank representation of sound levels-", moiN)) +
+  theme_minimal() +
+  ylim(c(55, 95)) +
+  theme(text = element_text(size = 15), 
+        plot.subtitle = element_text(face = "italic")) +
+  labs(title = "Residual Soundscape Condition (2010s)",
+       x = "Frequency (Hz)",
+       y = expression(paste("Residual Sound Pressure Level (dB re: 1", mu, "Pa)")))
+
+# Arrange plots side by side or on top of each other
+library(gridExtra)
+grid.arrange(plot_2000, plot_2010, ncol = 1)
+
 
