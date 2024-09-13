@@ -3,6 +3,8 @@ rm(list=ls())
 # install.packages("jsonlite")
 # install.packages("curl")
 
+# make all headers small caps so we can read in
+
 library(stringr)    
 library(jsonlite)
 library(curl)
