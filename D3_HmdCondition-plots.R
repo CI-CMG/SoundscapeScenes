@@ -81,21 +81,21 @@ start_points <- melted_RmthT %>%
   group_by(Site, Quant) %>%
   slice_min(order_by = Fq, n = 1)
 
-start_points$Fq = 70
+start_points$Fq = 80
 p = ggplot() +
   geom_line(data = melted_RmthT, aes(x = Fq, y = value, group = interaction(Site, Quant), 
-                                     color = Site, linetype = Quant), linewidth = 1) +
+                                     color = Site, linetype = Quant), linewidth = 2) +
   labs(subtitle = "low-rank representation of sound levels") +
-  theme_minimal() +     ylim(c(45,80))+
-  theme( text = element_text(size = 15),  # Set all text to size 16
+  theme_minimal() +     ylim(c(55,80))+
+  theme( text = element_text(size = 16),  # Set all text to size 16
          plot.subtitle = element_text(face = "italic")  ) +
   labs(  title = "Residual Soundscape Condition - October",
          x = "Frequency (Hz)",
          y =expression(paste("Residual Sound Pressure Level (dB re: 1", mu, "Pa)"))     ) +
-  scale_color_brewer(palette = "Blues") +
+  scale_color_brewer(palette = "Blues", direction = -1) +
   geom_text(data = start_points, aes(x = Fq, y = value, label = Year), 
             hjust = -0.1, size = 3, color = "black")
 # missing 2017 and 2022
 
-ggplotly(p)
+#ggplotly(p)
 p

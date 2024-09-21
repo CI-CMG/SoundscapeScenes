@@ -34,9 +34,9 @@ dirNames = sapply(strsplit(basename( subdirs ), "/"), `[`, 1)
 
 # GET INFORMATION FROM METADATA FILES ####
 output = NULL
-for (s in 1:length(sites) ) { #testing -  s = 1
+for (s in 1:length(dirNames) ) { #testing -  s = 1
   
-  args = c("ls", "-r", sites[s])
+  args = c("ls", "-r", subdirs[s])
   sFiles = system2(command, args, stdout = TRUE, stderr = TRUE)  
   json_files = grep("\\.json$", sFiles, value = TRUE) #metadata files
   #nc_files = grep("\\_netCDF.nc$", sFiles, value = TRUE) #data files- netcdf
@@ -64,7 +64,7 @@ for (s in 1:length(sites) ) { #testing -  s = 1
       }
       
       #save to output data for plotting
-      output = rbind(output, c(siteNames[s], jf, instrument, as.character(start), as.character(end)) )
+      output = rbind(output, c(dirNames[s], jf, instrument, as.character(start), as.character(end)) )
       rm(json_data)
       
     } else {
@@ -89,7 +89,7 @@ for (s in 1:length(sites) ) { #testing -  s = 1
       }
       
       #save to output data for plotting
-      output = rbind(output, c(siteNames[s], jf, instrument, as.character(start), as.character(end)) )
+      output = rbind(output, c(dirNames[s], jf, instrument, as.character(start), as.character(end)) )
     }
   }
 }
@@ -122,7 +122,8 @@ p = ggplot(output_long, aes(date, Site, color = Instrument, group=Site)) +
   scale_x_date(
     date_labels = "%b %Y", 
     date_breaks = "2 months", limits = c(x_min, x_max)  ) +
-  labs(x = "", y = "", title = paste0(projectN, "- Ocean Sound Monitoring Data Summary")) +
+  labs(x = "", y = "", title = paste0(" ONMS - Ocean Sound Monitoring Data Summary"),
+       subtitle = paste0("NCEI cloud as of ", format(Sys.Date(), "%B %d, %Y"))) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 16),
         axis.text.y = element_text(size = 16))

@@ -46,7 +46,7 @@ if (siteN == "AU_CH01"){
   idx = which(HmdDets$AnyVess >= 1 | HmdDets$AnyAir >= 1)
   HmdDets$AntLF = 0
   HmdDets$AntLF[idx] = 1
-  HmdDets[idx[1],999:1020]
+  #HmdDets[idx[1],999:1020]
   
   # BIO
   idx = which( HmdDets$BioLF > 0 & HmdDets$AntLF == 0 ) 
@@ -130,6 +130,7 @@ for (s in 1:length(uscene)) {
   dfT = rbind(dfT, tmpP) 
   rm(tmpD, tmpP)
 }
+
 ggplot(dfT, aes(x=as.numeric( as.character(key) ) , y=med.x) )  +
   geom_line( linewidth = 2, color = "gray") +
   geom_line(aes (y=lower.x),  alpha = .5,  linewidth = 1,color = "gray" , linetype="dotted") + 
@@ -155,6 +156,7 @@ for (s in 1:length(uscene)) {
   dfT = rbind(dfT, tmpP) 
   rm(tmpD, tmpP)
 }
+
 ggplot(dfT, aes(x=as.numeric( as.character(key) ) , y=med.x) )  +
   geom_line( linewidth = 2, color = "gray") +
   geom_line(aes (y=lower.x),  alpha = .5,  linewidth = 1,color = "gray" , linetype="dotted") + 
@@ -164,3 +166,32 @@ ggplot(dfT, aes(x=as.numeric( as.character(key) ) , y=med.x) )  +
   ylim(c(50,95)) +   theme_bw()+ 
   ggtitle (paste("Soundscape Metrics by Scene")) +
   theme(text = element_text(size = 16) )
+
+ggplot(dfT, aes(x=as.numeric( as.character(key) ) , y=med.x, color = Category2) )  +
+  geom_line( linewidth = 2) +
+  geom_line(aes (y=lower.x),  alpha = .5,  linewidth = 1, linetype="dotted") + 
+  geom_line(aes (y=upper.x),  alpha = .5,  linewidth = 1, linetype="dotted") +
+  #facet_wrap(~Category2) +
+  scale_x_log10() +  ylab("1-min PSD median") + xlab("HMD Frequency (Hz)")+
+  ylim(c(50,95)) +   theme_bw()+ 
+  ggtitle (paste("Soundscape Metrics by Scene")) +
+  theme(text = element_text(size = 16) )
+
+talSeason = as.data.frame( HmdDets %>% group_by(Category2) %>% tally() )
+category_labels <- paste(talSeason$Category2, "(n =", talSeason$n, ")")
+names(category_labels) <- talSeason$Category2
+
+ggplot(dfT, aes(x=as.numeric( as.character(key) ) , y=med.x, color = Category2) )  +
+  geom_line( linewidth = 2) +
+  geom_ribbon(aes(ymin = lower.x, ymax = upper.x, fill = Category2), alpha = 0.2, color = NA) +
+  scale_x_log10() + xlab("HMD Frequency (Hz)")+
+  ylab(expression("median 1-min PSD ("*mu*"P"^2*"/Hz)")) + 
+   ylim(c(60,90)) +  xlim(c(100,1000)) + theme_bw()+ 
+  #ggtitle (paste("Soundscape Metrics by Scene")) +
+  theme(text = element_text(size = 16) )+
+  labs(color = "SoundScape Scene", fill = "SoundScape Scene")  + # Changing the legend title
+  # Update the legend labels with sample sizes
+  scale_color_manual(labels = category_labels, values = scales::hue_pal()(length(category_labels))) +
+  scale_fill_manual(labels = category_labels, values = scales::hue_pal()(length(category_labels)))
+
+
