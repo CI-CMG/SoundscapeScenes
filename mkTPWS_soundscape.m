@@ -1,8 +1,11 @@
 clear all
 close all
 
-inDir = "F:\SoundCoop\hmd_downloadedGCP\AU_CH01\"; 
-outDir = 'G:\.shortcut-targets-by-id\1QAlmQwj6IS-J6Gw2PRNQR6jz_4qA5CYZ\SoundCoop_AcousticScene\ClusterAnalysis\A_inputTPWS';
+%inDir = "F:\SoundCoop\hmd_downloadedGCP\AU_CH01\"; 
+%outDir = 'G:\.shortcut-targets-by-id\1QAlmQwj6IS-J6Gw2PRNQR6jz_4qA5CYZ\SoundCoop_AcousticScene\ClusterAnalysis\A_inputTPWS';
+inDir = "C:\Users\megan\Documents\NRS11example\metrics"; 
+outDir = "C:\Users\megan\Documents\NRS11example\features\tpws\"; 
+
 if ~isdir(outDir)
     mkdir(outDir)
 end
