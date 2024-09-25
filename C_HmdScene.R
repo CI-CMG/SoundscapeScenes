@@ -184,14 +184,14 @@ names(category_labels) <- talSeason$Category2
 ggplot(dfT, aes(x=as.numeric( as.character(key) ) , y=med.x, color = Category2) )  +
   geom_line( linewidth = 2) +
   geom_ribbon(aes(ymin = lower.x, ymax = upper.x, fill = Category2), alpha = 0.2, color = NA) +
-  scale_x_log10() + xlab("HMD Frequency (Hz)")+
+  scale_x_log10() + xlab("HMD Frequency (Hz)") +
   ylab(expression("median 1-min PSD ("*mu*"P"^2*"/Hz)")) + 
-   ylim(c(60,90)) +  xlim(c(100,1000)) + theme_bw()+ 
-  #ggtitle (paste("Soundscape Metrics by Scene")) +
+  theme_bw()+
   theme(text = element_text(size = 16) )+
-  labs(color = "SoundScape Scene", fill = "SoundScape Scene")  + # Changing the legend title
+  labs(color = "Soundscape Scene", fill = "SoundScape Scene")  + # Changing the legend title
   # Update the legend labels with sample sizes
   scale_color_manual(labels = category_labels, values = scales::hue_pal()(length(category_labels))) +
-  scale_fill_manual(labels = category_labels, values = scales::hue_pal()(length(category_labels)))
-
-
+  #scale_fill_manual(labels = category_labels,  values = scales::hue_pal()(length(category_labels)))
+guides(fill = "none")
+  #ylim(c(60,90)) +  xlim(c(100,1000))
+  
