@@ -21,6 +21,7 @@ library(ncdf4)
 
 # SET GCP DIRECTORY ####
 #gcpDir = "gs://noaa-passive-bioacoustic/nrs/audio" # NRS
+# get directories from NCEI PAM map viewer
 gcpDir = "gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics" #ONMS
 projectN = "onms" #nrs # set this to deal with different metadata formats
 command = "gsutil"
