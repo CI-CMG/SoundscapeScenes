@@ -1,0 +1,195 @@
+{
+    "DATA_COLLECTION_NAME": "NRS_01_20180820-20200824_HMD",
+    "PUBLISH_DATE": "2023-04-17",
+    "PROJECT_NAME": [
+        "NRS",
+        "SoundCoop"
+    ],
+    "DEPLOYMENT_NAME": "2018-2020",
+    "DEPLOYMENT_ALIAS": "",
+    "SITE": "01",
+    "SITE_ALIASES": [],
+    "TITLE": "Hybrid Millidecade Band Sound Pressure Levels Computed at 1 Minute Resolution from Oceanic Passive Acoustic Monitoring Recordings at NRS01 2018-2020",
+    "ABSTRACT": "To understand natural and anthropogenic sound in the ocean, and to compare underwater soundscapes globally, standard methods of analysis must be applied to passive acoustic monitoring (PAM) data. Methods that balance constrained volume and adequate resolution of acoustic spectra have recently been published (Martin et al., 2021a,b). A community effort supported by NOAA, BOEM, U.S. Navy, and ONR was initiated to apply these methods to PAM datasets from around the world. This record represents the hybrid millidecade (HMD) spectra of sound levels derived from calibrated passive acoustic data. Daily HMD at 1 minute resolution were created using standalone MANTA software (v9.6.12). These data were recorded at NRS 01 between August 20, 2018 and August 24, 2020.",
+    "PURPOSE": "",
+    "CHANNELS": {
+        "1": {
+            "CHANNEL_START": "2018-08-19T00:00:00",
+            "CHANNEL_END": "2020-08-25T00:00:00",
+            "SENSOR": "",
+            "SAMPLING_DETAILS": {
+                "SAMPLING": [
+                    {
+                        "START": "2018-08-19T00:00:00",
+                        "END": "2020-08-25T00:00:00",
+                        "SAMPLE_RATE": "5",
+                        "SAMPLE_BITS": "16"
+                    }
+                ],
+                "GAIN": [],
+                "DUTY_CYCLE": [
+                    {
+                        "START": "2018-08-19T00:00:00",
+                        "END": "2020-08-25T00:00:00",
+                        "DURATION": "60",
+                        "INTERVAL": "0"
+                    }
+                ]
+            }
+        }
+    },
+    "QUALITY_DETAILS": {
+        "analyst": "Samara Haver",
+        "analyst_uuid": "d8de4351-86be-4e16-aa86-9edcac4ec82b",
+        "quality_details": [
+            {
+                "quality": "Good",
+                "low_freq": "0",
+                "high_freq": "2000",
+                "start": "2018-08-19T00:00:00",
+                "end": "2020-08-25T00:00:00",
+                "comments": "",
+                "channels": ""
+            },
+            {
+                "quality": "Unusable",
+                "low_freq": "2000",
+                "high_freq": "2500",
+                "start": "2018-08-19T00:00:00",
+                "end": "2020-08-25T00:00:00",
+                "comments": "",
+                "channels": ""
+            },
+            {
+                "quality": "Unusable",
+                "low_freq": "0",
+                "high_freq": "10",
+                "start": "2018-08-19T00:00:00",
+                "end": "2020-08-25T00:00:00",
+                "comments": "",
+                "channels": ""
+            }
+        ],
+        "method": "",
+        "objectives": "",
+        "abstract": ""
+    },
+    "PLATFORM_NAME": "Mooring",
+    "INSTRUMENT_TYPE": "AUH",
+    "INSTRUMENT_ID": "",
+    "DEPLOYMENT": {
+        "DEPLOYMENT_TIME": "",
+        "RECOVERY_TIME": "",
+        "AUDIO_START": "2018-08-19T00:00:00",
+        "AUDIO_END": "2020-08-25T00:00:00",
+        "DEPLOY_TYPE": "Stationary Marine",
+        "SEA_AREA": "Beaufort Sea",
+        "DEPLOY_LAT": "72.454",
+        "DEPLOY_LON": "-156.579",
+        "DEPLOY_SHIP": "",
+        "DEPLOY_INSTRUMENT_DEPTH": "-500",
+        "DEPLOY_BOTTOM_DEPTH": "-890",
+        "RECOVER_LAT": "72.454",
+        "RECOVER_LON": "-156.579",
+        "RECOVER_SHIP": "",
+        "RECOVER_INSTRUMENT_DEPTH": "-500",
+        "RECOVER_BOTTOM_DEPTH": "-890"
+    },
+    "DATASET_DETAILS": {
+        "TYPE": "Product",
+        "SUB_TYPE": "Sound Level Metrics",
+        "SOURCE_PATH": "//acoustic/haver/PassivePacker/CurrentArchive/NRS_01_20180820-20200824_HMD/data/data_files",
+        "DATA_FILES": "//acoustic/haver/PassivePacker/CurrentArchive/NRS_01_20180820-20200824_HMD/data/data_files",
+        "ANALYSIS_TIME_ZONE": "0",
+        "ANALYSIS_EFFORT": "3600",
+        "MIN_ANALYSIS_FREQUENCY": "0",
+        "MAX_ANALYSIS_FREQUENCY": "2000",
+        "ANALYSIS_SAMPLE_RATE": "5",
+        "SOFTWARE_NAME": "MANTA",
+        "SOFTWARE_VERSION": "9.6.12",
+        "PROTOCOL_REFERENCE": "Martin et al., 2021a, https://doi.org/10.1121/10.0003324; Martin et al, 2021b, https://doi.org/10.1121/10.0005818; Miksis-Olds et al., 2021, https://doi.org/10.3389/fmars.2021.703650",
+        "PROCESSING_STATEMENT": "Data analysis was performed using the Making Ambient Noise Trends Accessible (MANTA, https://bitbucket.org/CLO-BRP/manta-wiki/wiki/Home, see Miksis-Olds et al., 2021; Martin et al., 2021a,b) standalone software (Version 9.6.12) to produce hybrid millidecade spectra of sound levels from ocean audio recordings. To efficiently tackle large datasets, MANTA is designed around a parallel-processing Matlab package, Raven-X (Dugan et. al., 2014, 2016, and 2018) that uses ordinary multi-core computers to accelerate processing speeds. MANTA calculates the sound pressure spectral density (PSD) levels in units of 1 \u00b5Pa^2/Hz using Welch's Method in Matlab. The Discrete Fourier Transform length is equal to the sample rate, a Hann window of equal length is applied to the data and 50% overlap is used. This results in PSD estimates of mean-square pressure amplitude (\u00b5Pa^2) with a frequency resolution of 1 Hz and temporal resolution of 1 second. The 120 PSD estimates from each 1-minute segment were averaged, and the average spectrum for each minute was further processed to a hybrid millidecade (HMD) spectrum as dB re 1 \u00b5Pa^2/Hz, as defined in Martin et al. (2021b). Hybrid millidecades are an efficient means of storing PSD spectra from high sample rate audio files using 1-Hz values up to 435 Hz, then millidecade wide PSD values up to one half of the sampling rate (Martin et al., 2021b). The MANTA outputs for each day are: (1) CSV of the 1 minute HMD results; (2) image of the daily long-term spectral average based on the 1 minute HMD results, (3) image of the daily spectral probability density with percentiles, and (4) NetCDF containing products 2 and 3 in addition to a deployment-level MANTA Metadata output file containing the associated frequency-dependent calibration data used to compute the calibrated spectrum levels.",
+        "SOFTWARE_STATEMENT": "Data were processed with MANTA v9.6.12",
+        "ANALYSIS_START": "2018-08-19T00:00:00",
+        "ANALYSIS_END": "2020-08-25T00:00:00"
+    },
+    "CALIBRATION_INFO": {
+        "CAL_STATE": "Calibration applied before processing",
+        "CAL_DOCS_PATH": "//acoustic/haver/PassivePacker/CurrentArchive/NRS_01_20180820-20200824_HMD/data/calibration",
+        "SENSITIVITY": "",
+        "FREQUENCY": "",
+        "GAIN": "",
+        "COMMENT": ""
+    },
+    "SCIENTISTS": [
+        {
+            "name": "Catherine Berchok",
+            "uuid": "99ecee0d-b0b1-42c7-b24b-c4eb1aeb0774"
+        },
+        {
+            "name": "Samara Haver",
+            "uuid": "d8de4351-86be-4e16-aa86-9edcac4ec82b"
+        },
+        {
+            "name": "Robert Dziak",
+            "uuid": "922adff0-876b-11e2-9e96-0800200c9a66"
+        },
+        {
+            "name": "Jason Gedamke",
+            "uuid": "63f80438-150d-40e1-b304-fe87e76b78e2"
+        },
+        {
+            "name": "Phyllis Stabeno",
+            "uuid": "72625dbe-f585-474a-99fa-5efc71af3d62"
+        },
+        {
+            "name": "Meghan Cronin",
+            "uuid": "50a23c02-9950-4491-bb98-094861926e11"
+        },
+        {
+            "name": "Lauren Roche",
+            "uuid": "5e40a809-c08f-4aac-bec5-1838b57ea481"
+        }
+    ],
+    "SPONSORS": [
+        {
+            "name": "NOAA NMFS",
+            "uuid": "34fa8648-9091-4426-bcd1-1f95d29811ad"
+        },
+        {
+            "name": "NOAA PMEL",
+            "uuid": "c526e57f-6e36-4e60-8214-dece41f7a57b"
+        },
+        {
+            "name": "NOAA NMFS Office of Science and Technology",
+            "uuid": "d246d0dc-b74b-4dc3-8d27-bdbb28b3e009"
+        }
+    ],
+    "FUNDERS": [
+        {
+            "name": "NOAA NMFS",
+            "uuid": "34fa8648-9091-4426-bcd1-1f95d29811ad"
+        },
+        {
+            "name": "NOAA PMEL",
+            "uuid": "c526e57f-6e36-4e60-8214-dece41f7a57b"
+        },
+        {
+            "name": "NOAA NMFS Office of Science and Technology",
+            "uuid": "d246d0dc-b74b-4dc3-8d27-bdbb28b3e009"
+        }
+    ],
+    "METADATA_AUTHOR": {
+        "NAME": "Samara Haver",
+        "UUID": "d8de4351-86be-4e16-aa86-9edcac4ec82b",
+        "ORGANIZATION": "NOAA/PMEL/CIMRS",
+        "POSITION": "Research Assistant",
+        "STREET": "2030 SE Marine Science Drive",
+        "CITY": "Newport",
+        "STATE": "OR",
+        "ZIP": "97365",
+        "COUNTRY": "USA",
+        "EMAIL": "samara.haver@noaa.gov<",
+        "PHONE": "503-347-6999"
+    }
+}
