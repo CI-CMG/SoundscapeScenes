@@ -1,0 +1,8 @@
+Included in this folder - 
+1) example netCDF data file created from the MANTA output: NRS01_H5R6B.1.5000_20180831_DAILY_MILLIDEC_MinRes_v3.nc
+2) python files making up the converter
+- manta_netcdf.py - main converter script that works over a directory of PassoivePacker data packages
+- base_converter.py: Base class of all PAD product netCDF converters
+- manta_convert.py: script that does most of the work convertering MANTA output files into the NCEI data netCDF file. Data quality flag array initialization and converting raw data quality metadata into quality "bins" is in the "get_quality" method (line 366) and the updating of values based on data quality parameters start at line 571.
+3) an example data package metadata file to illustrate the source of the data quality information: 
+NRS_01_20180820-20200824_HMD_v3.json
