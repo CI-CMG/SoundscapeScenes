@@ -27,6 +27,7 @@ siteN = "ESONS"
 siteN = "AU_CH01-all"
 siteN = "test"
 siteN = "NRS01"
+siteN = "NRS11"
 target_valueIn = 4 # change this to the value you're searching for in quality matrix
 frq_range = c(100, 1997.6)
 LB = "LF" #what label do you want to indicate on the ouutput file, LF = low frequency

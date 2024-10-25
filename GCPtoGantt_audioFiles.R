@@ -54,7 +54,6 @@ subdirsALL = c(subdirs, subdirs2)
 dirNames  = sapply(strsplit(basename( subdirsALL ), "/"), `[`, 1)
 cat("Processing... ", projectN, length(dirNames), "directories" )
 
-
 # GET INFORMATION FROM METADATA FILES ####
 output = NULL
 for (s in 1:length(subdirsALL) ) { # s=21
