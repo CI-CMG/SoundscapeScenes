@@ -26,6 +26,7 @@ library("rnaturalearth")
 library("rnaturalearthdata")
 library (geosphere)
 #library(ggsn)
+DC = Sys.Date()
         
 # SET GCP DIRECTORY ####
 # get directories from NCEI PAM map viewer
@@ -34,7 +35,7 @@ gcpDir  = "gs://noaa-passive-bioacoustic/onms/audio" #ONMS
 gcpDir2 = "gs://noaa-passive-bioacoustic/sanctsound/audio" #SANCTSOUND
 projectN = "onms" #nrs # set this to deal with different metadata formats
 projectN2 = "sanctsound" #nrs # set this to deal with different metadata formats
-outputDir = "G:\\My Drive\\ActiveProjects\\SANCTSOUND_shared\\ONMS"
+outputDir = "F:\\ONMS" #"G:\\My Drive\\ActiveProjects\\SANCTSOUND_shared\\ONMS"
 
 # gcpDir = "gs://noaa-passive-bioacoustic/nrs/audio" # NRS
 # projectN = "nrs"
@@ -137,6 +138,8 @@ output$End_Date <- as.Date(output$End_Date, format = "%Y-%m-%d")
 x_min = min(output$Start_Date)
 x_max = max(output$End_Date)
 
+save(output, file = paste0(outputDir, "\\GCPaudio_ONMS_", DC, ".Rda") )
+
 # SET COLORS ####
 uColors = unique(output$Instrument)
 if (projectN == "onms"){
@@ -160,6 +163,24 @@ pT = ggplot(output, aes(y = Site, x = Start_Date, xend = End_Date)) +
         axis.text.y = element_text(size = 16))
 pT
 
+#PLOT MAP OF REGION ####
+world = ne_countries(scale = "medium", returnclass = "sf")
+WGS84proj = 4326
+sites = st_as_sf(data.frame( latitude = output$Lat, longitude = output$Lon ), 
+                  coords = c("longitude", "latitude"), crs = WGS84proj, 
+                  agr = "constant")
+ggplot(data = world) +
+  geom_sf(aes(fill = region_wb)) +
+  geom_sf(data = sites, size = 3, shape = 20, fill = "darkred") +
+  coord_sf(crs = st_crs(2163)  , 
+           xlim = c(-6000000, 2500000), 
+           ylim = c(1000000, -2300000), expand = FALSE, datum = NA) +
+  scale_fill_viridis_d(option = "E") +
+  theme(legend.position = "none", axis.title.x = element_blank(), 
+        axis.title.y = element_blank(), panel.background = element_rect(fill = "azure"), 
+        panel.border = element_rect(fill = NA)) 
+
+# UNDER CONSTRUCTION ....
 # geom_line option - something seems off!!!
 output_long <- output %>%
   pivot_longer(cols = c(Start_Date, End_Date), names_to = "state", values_to = "date")
@@ -177,24 +198,6 @@ p = ggplot(output_long, aes(date, Site, color = Instrument, group=DeploymentName
         axis.text.y = element_text(size = 16))
 p
 
-
-
-#PLOT MAP OF REGION ####
-world = ne_countries(scale = "medium", returnclass = "sf")
-WGS84proj = 4326
-sites = st_as_sf(data.frame( latitude = output$Lat, longitude = output$Lon ), 
-                  coords = c("longitude", "latitude"), crs = WGS84proj, 
-                  agr = "constant")
-ggplot(data = world) +
-  geom_sf(aes(fill = region_wb)) +
-  geom_sf(data = sites, size = 3, shape = 20, fill = "darkred") +
-  coord_sf(crs = st_crs(2163)  , 
-           xlim = c(-6000000, 2500000), 
-           ylim = c(1000000, -2300000), expand = FALSE, datum = NA) +
-  scale_fill_viridis_d(option = "E") +
-  theme(legend.position = "none", axis.title.x = element_blank(), 
-        axis.title.y = element_blank(), panel.background = element_rect(fill = "azure"), 
-        panel.border = element_rect(fill = NA)) 
 
 
 # TEST METADATA FILES ####

@@ -61,6 +61,6 @@ ggplot(dfT, aes(x=as.numeric( as.character(key) ) , y=med.x) )  +
   geom_line(aes (y=upper.x),  alpha = .5,  linewidth = 1, color = "gray", linetype="dotted") +
   facet_wrap(~Category) +
   scale_x_log10() +  ylab("1-min PSD median") + xlab("HMD Frequency (Hz)")+
-  ylim(c(50,95)) +   theme_bw()+ 
+  ylim(c(50,95))  +   theme_bw()+ 
   ggtitle (paste("Soundscape Metrics by Seasons")) +
   theme(text = element_text(size = 16) )

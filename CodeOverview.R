@@ -2,7 +2,6 @@
 # SITES: c( "CI04_02", "GR01_01", "HI04_02", "MB02_02", "OC02_02", "PM02_01","SB01_02", "SB03_08")
 
 # PURPOSE:
-""
 # input: 
 # output:
 
