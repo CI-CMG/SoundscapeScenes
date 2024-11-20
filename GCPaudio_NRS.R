@@ -102,8 +102,8 @@ for (s in 1:length(subdirsALL) ) { # s=2
       start = as.Date( gsub("T"," ", tmp$deployment$audio_start), format = "%Y-%m-%d")
       end   = as.Date( gsub("T"," ", tmp$recover$audio_end), format = "%Y-%m-%d")
       lat   = tmp$deployment$lat
-      lon   = tmp $deployment$lon
-      
+      lon   = tmp$deployment$lon
+       
       #save to output data - each deployment
       output = rbind(output, c(subdirsALL[s], jf, name, instr, 
                                as.character(start), as.character(end), 
