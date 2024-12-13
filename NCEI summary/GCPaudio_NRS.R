@@ -25,7 +25,7 @@ projectN = "NRS"
 DC = Sys.Date()
 typ = "audio"
 gcpDir  = paste0( "gs://noaa-passive-bioacoustic/", tolower(projectN), "/audio" )
-outputDir = "F:\\ONMS//overview"   #UPDATE TO LOCAL COMPUTER
+outputDir =  "F:\\CODE\\GitHub\\SoundscapeScenes\\NCEI summary" #"F:\\ONMS//overview"   #UPDATE TO LOCAL COMPUTER -- GitRepo
 
 # Program - level METADATA ####
 inFile = paste0(outputDir, "//ONMSSound_IndicatorCategories_2024-10-29.xlsx")
