@@ -1,13 +1,14 @@
 rm(list=ls()) 
 
-# PURPOSE -  query NCEI gcp passive acoustic archive to create gantt charts of data in the archive
+# PURPOSE ####
+#-  query NCEI gcp passive acoustic archive to create gantt charts of data in the archive
 # NOTES - use command line approach to access files, assumes open sites (do not need authentication step)
 # INPUT - gcp directory for project- assumes metadata files are present
 # OUTPUT - Rdat file to use in plotting
 
 #!!!! NEEDS ATTENTION ####
 # MAP is not working yet
-# what do do about text files for early deployments 
+# what do do about text files for early deployments -  
 # LAT/LON are switched
 # how do you want the labels on the gantt and map? include lookup table
 
@@ -24,6 +25,13 @@ library(sf)
 library(rnaturalearth)
 library(rnaturalearthdata)
 
+# Program - level METADATA ####
+inFile = paste0(outputDir, "//ONMSSound_IndicatorCategories_2024-10-29.xlsx")
+lookup = as.data.frame ( read.xlsx(inFile) )
+colnames(lookup) <- lookup[1, ]  # Set first row as column names
+lookup <- as.data.frame( lookup[-1, ] )          # Remove the first row
+colnames(lookup) 
+
 # SET GCP DIRECTORY ####
 # get directories from NCEI PAM map viewer
 DC = Sys.Date()
@@ -32,11 +40,7 @@ gcpDir  = "gs://noaa-passive-bioacoustic/nrs/audio" #ONMS
 outputDir = "F:\\ONMS//overview"   #UPDATE TO LOCAL COMPUTER
 projectN = "NRS"
 projectN2 = "NRS-early"
-inFile = paste0(outputDir, "//ONMSSound_IndicatorCategories_2024-10-29.xlsx")
-lookup = as.data.frame ( read.xlsx(inFile) )
-colnames(lookup) <- lookup[1, ]  # Set first row as column names
-lookup <- as.data.frame( lookup[-1, ] )          # Remove the first row
-colnames(lookup) 
+
 
 # LIST SUB DIRECTORIES ####
 #these should be the "monitoring sites" you want to gather information about
@@ -48,7 +52,6 @@ dirNames  = sapply(strsplit(basename( subdirsALL ), "/"), `[`, 1)
 cat("Processing... ", projectN, length(dirNames), "directories" )
 
 #read one file-- to see what files are available?
-
 siteIn = 1
 args = c("ls", "-r", subdirsALL[siteIn])
 sFiles = system2(command, args, stdout = TRUE, stderr = TRUE)  
@@ -63,7 +66,7 @@ tmp = fromJSON(paste(url, collapse = ""))
 
 # GET INFORMATION FROM METADATA FILES ####
 output = NULL
-for (s in 1:length(subdirsALL) ) { # s=2
+for (s in 1:length(subdirsALL) ) { # s=8
   
   ## read in files ####
   args = c("ls", "-r", subdirsALL[s])
@@ -83,6 +86,7 @@ for (s in 1:length(subdirsALL) ) { # s=2
     if ( is.null( tmp$deployment$audio_start) ) { #not small caps
       
       name  = tmp$SITE 
+      deploy = tmp$DEPLOYMENT_NAME
       instr = tmp$INSTRUMENT_TYPE
       start = as.Date( gsub("T"," ", tmp$DEPLOYMENT$AUDIO_START), format = "%Y-%m-%d")
       end   = as.Date( gsub("T"," ", tmp$DEPLOYMENT$AUDIO_END), format = "%Y-%m-%d")
@@ -90,7 +94,7 @@ for (s in 1:length(subdirsALL) ) { # s=2
       lon   = tmp$DEPLOYMENT$DEPLOY_LON
       
       #save to output data - each deployment
-      output = rbind(output, c(subdirsALL[s], jf, name, instr, 
+      output = rbind(output, c(subdirsALL[s], jf, name, deploy, instr, 
                                as.character(start), as.character(end), 
                                lat, lon) )
       
@@ -98,14 +102,16 @@ for (s in 1:length(subdirsALL) ) { # s=2
     } else if ( !is.null( tmp$deployment$audio_start) ) { #small caps
       
       name  = tmp$site 
+      names(tmp)[names(tmp) == "INSTRUMENT_TYPE"] =  "instrument_type"
       instr = tmp$instrument_type
+      deploy =  tmp$deployment_id
       start = as.Date( gsub("T"," ", tmp$deployment$audio_start), format = "%Y-%m-%d")
       end   = as.Date( gsub("T"," ", tmp$recover$audio_end), format = "%Y-%m-%d")
       lat   = tmp$deployment$lat
       lon   = tmp$deployment$lon
        
       #save to output data - each deployment
-      output = rbind(output, c(subdirsALL[s], jf, name, instr, 
+      output = rbind(output, c(subdirsALL[s], jf, name, deploy, instr, 
                                as.character(start), as.character(end), 
                                lat, lon) )
     } else {
@@ -122,7 +128,7 @@ for (s in 1:length(subdirsALL) ) { # s=2
 
 # SAVE SUMMARY ####
 output = as.data.frame(output)
-colnames(output) = c("Path", "DeploymentNumber", "DeploymentName", "Instrument", "Start_Date", "End_Date","Lat","Lon")
+colnames(output) = c("Path", "FileCount", "SiteName", "DeploymentName", "Instrument", "Start_Date", "End_Date","Lat","Lon")
 output$Site = basename((output$Path))
 output$Start_Date = as.Date(output$Start_Date, format = "%Y-%m-%d")
 output$End_Date = as.Date(output$End_Date, format = "%Y-%m-%d")
