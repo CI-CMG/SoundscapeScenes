@@ -21,7 +21,7 @@ library(rnaturalearthdata)
 library(readxl)
 
 # SET UP - UPDATE!! ####
-projectN = "NRS"
+projectN = "ONMS"
 DC = Sys.Date()
 typ = "audio"
 gcpDir  = paste0( "gs://noaa-passive-bioacoustic/", tolower(projectN), "/audio" )
@@ -120,7 +120,7 @@ output$Instrument = "AUH"
 if (projectN == "NRS"){ output2 = rbind(output, NRSold )}
 output2$Site = paste0( tolower( projectN ), "_", output2$SiteName ) 
 
-# SAVE SUMMARY ####
+# SAVE SUMMARY #### 
 fileName = paste0(outputDir, "\\", projectN, "_dataSummary_", DC)
 save(output2, file = paste0( fileName,  ".Rda" ) )
 write.csv(output2, file = paste0( fileName,  ".csv" ) )

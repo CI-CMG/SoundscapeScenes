@@ -22,56 +22,32 @@ library("sf")
 library("rnaturalearth")
 library("rnaturalearthdata")
 library (geosphere)
-#library(ggsn)
+
 
 DC = Sys.Date()
 
 # INPUT - 
-inDir = "F:\\ONMS" #"G:\\My Drive\\ActiveProjects\\SANCTSOUND_shared\\ONMS"
-
-
-
-x_min = min(output$Start_Date)
-x_max = max(output$End_Date)
-
-
-# SET COLORS ####
-uColors = unique(output$Instrument)
-if (projectN == "onms"){
-  instrument_colors <- c(
-    "SoundTrap 500" = "#88CCEE",  
-    "SoundTrap 600" = "#CC6677",#88CCEE",  
-    "SoundTrap 300" = "#44AA99", 
-    "HARP" =          "#DDCC77") #DDCC77
-}
-
-# GENERATE PLOT ####
-# geom_tile option 
-pT = ggplot(output, aes(y = Site, x = Start_Date, xend = End_Date)) +
-  geom_tile(aes(x = Start_Date, width = as.numeric(End_Date - Start_Date), fill = Instrument), 
-            color = "black", height = 0.4) +  # Fill color by Instrument and outline in black
-  scale_fill_manual(values = instrument_colors) +  # Use specific colors for instruments
-  labs(x = "", y = "", title = paste0(toupper(projectN),  " - Ocean Sound Monitoring Data Summary"),
-       subtitle = paste0("NCEI google cloud platform (", typ, ") as of ", format(Sys.Date(), "%B %d, %Y"))) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 16),
-        axis.text.y = element_text(size = 16))
-pT
+inDir = "F:\\ONMS\\overview" #"G:\\My Drive\\ActiveProjects\\SANCTSOUND_shared\\ONMS"
+setwd(inDir)
 
 #PLOT MAP OF REGION ####
-world = ne_countries(scale = "medium", returnclass = "sf")
-WGS84proj = 4326
-sites = st_as_sf(data.frame( latitude = output$Lat, longitude = output$Lon ), 
-                 coords = c("longitude", "latitude"), crs = WGS84proj, 
-                 agr = "constant")
-ggplot(data = world) +
-  geom_sf(aes(fill = region_wb)) +
-  geom_sf(data = sites, size = 3, shape = 20, fill = "darkred") +
-  coord_sf(crs = st_crs(2163)  , 
-           xlim = c(-6000000, 2500000), 
-           ylim = c(1000000, -2300000), expand = FALSE, datum = NA) +
-  scale_fill_viridis_d(option = "E") +
-  theme(legend.position = "none", axis.title.x = element_blank(), 
-        axis.title.y = element_blank(), panel.background = element_rect(fill = "azure"), 
-        panel.border = element_rect(fill = NA)) 
+load("map_ONMS_map_2024-11-05.Rda" )
+outputMap2a$Latitude = as.numeric(as.character(gsub("°","", outputMap2a$Latitude)) )
+outputMap2a$Longitude = as.numeric(as.character(gsub("°","", outputMap2a$Longitude)) )
+outputMap2a$TotalDays = as.numeric( outputMap2a$TotalDays )
+output = outputMap2a[outputMap2a$Sanctuary =="MB",]
+data_sf = st_as_sf(output, coords = c("Longitude", "Latitude"), crs = 4326)
+bbox=st_bbox(data_sf)
+world = ne_countries(scale = "large", returnclass = "sf")
+p = ggplot() +
+  geom_sf(data = world, fill = "gray80", color = "gray40") +   # Add land background
+  geom_sf(data = data_sf, aes(color = Region, size = as.numeric( TotalDays ) ) )  +  # Color by Region, size by total days
+  theme_minimal() +
+  coord_sf(xlim = c(bbox["xmin"]-1, bbox["xmax"]+1), 
+           ylim = c(bbox["ymin"]-1, bbox["ymax"]+1), 
+           expand = FALSE) +  # Trim map to data points
+  labs(title = "Map of Sites by Region and Total Days",
+       size = "Total Days") +
+  scale_size_continuous(range = c(1, 5))  # Adjust point size range
+p
 

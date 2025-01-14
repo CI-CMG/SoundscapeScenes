@@ -1,17 +1,23 @@
 # ONMS plot for average sound levels by season
 rm(list=ls()) 
 
-#devtools::install_github('TaikiSan21/PAMscapes')
+# assumes data are already downloaded from cloud
+# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/mb01 F:/ONMS/mb01
+# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/sb03 F:/ONMS/sb03
+# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/oc02 F:/ONMS/oc02
+
+
 library(PAMscapes)
 library(lubridate)
 library(dplyr)
 library(ggplot2)
 library(reshape)
 
+# SET UP PARAMS ####
 DC = Sys.Date()
 outputDir = "F:/ONMS/"
 
-# SanctSound FILES - ERDAP ####
+## SanctSound FILES - ERDAP ####
 site  = "MB01"
 dirTop = "F:\\SanctSound" 
 inFiles = list.files(path = dirTop, pattern = site, full.names = T, recursive = T)
@@ -27,23 +33,15 @@ for (ii in 1:length(inFiles)) { # ii = 3
   cat( inFiles[ii], "Start = ", as.character( as.Date( min(tmp$UTC) ) ),"\n")
   sData = rbind(sData, tmp)
 }
-
 sData$site = tolower(site)
 sData$yr   = year(sData$UTC)
 sData$mth  = month(sData$UTC)
-plot(sData$UTC)
-min(sData$UTC) # 2018-11 
-max(sData$UTC) # 2019-03 
 
-# Manta Files- NCEI ####
-# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/mb01 F:/ONMS/mb01
-# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/sb03 F:/ONMS/sb03
-# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/oc02 F:/ONMS/oc02
+## Manta Files- NCEI ####
 site = tolower(site) # "mb01"
 inDir = paste0( "F:/ONMS/",site) 
 inFiles = list.files(inDir, pattern = "MinRes.nc", recursive = T, full.names = T)
-
-cData = NULL
+cData = NULL  
 for (f in 1:length(inFiles) ){
   ncFile = inFiles[f]
   hmdData = loadSoundscapeData(ncFile)
@@ -55,10 +53,9 @@ cData$yr  = year(cData$UTC)
 cData$mth = month(cData$UTC)
 min(cData$UTC)
 cDatah = binSoundscapeData(cData, bin = "1hour", method = c("median") )
-#include 
 
-# COMBINE DATA ####
-sData$Latitude = cDatah$Latitude[1]
+## COMBINE DATA ####
+sData$Latitude  = cDatah$Latitude[1]
 sData$Longitude = cDatah$Longitude[1]
 cData_mismatched = setdiff(colnames(cDatah), colnames(sData))
 cData_cleaned = cDatah[, !colnames(cDatah) %in% cData_mismatched]
@@ -67,30 +64,25 @@ cData_cleaned = cData_cleaned[, colnames(sData)]
 aData = rbind(cData_cleaned, sData)
 
 # ADD SEASON LABEL ####
-aData$Season[aData$mth == 12] = "fall" # make this month with the next year
+aData$Season[aData$mth == 12] = "winter" 
 aData$Season[aData$mth == 1] = "winter"
 aData$Season[aData$mth == 2] = "winter"
-aData$Season[aData$mth == 3] = "winter"
+aData$Season[aData$mth == 3] = "spring"
 aData$Season[aData$mth == 4] = "spring"
 aData$Season[aData$mth == 5] = "spring"
-aData$Season[aData$mth == 6] = "spring"
+aData$Season[aData$mth == 6] = "summer"
 aData$Season[aData$mth == 7] = "summer"
 aData$Season[aData$mth == 8] = "summer"
-aData$Season[aData$mth == 9] = "summer"
+aData$Season[aData$mth == 9] = "fall"
 aData$Season[aData$mth == 10] = "fall"
 aData$Season[aData$mth == 11] = "fall"
 seasons = unique(aData$Season)
+save(      aData, file = paste0(outDir, "data_", tolower(site), "_HourlySPL_", DC, ".Rda") )
 
 # GET PERCENTILES of hourly medians values by SEASON and year ####
 tol_columns = grep("TOL", colnames(aData))
 unique_years = unique(aData$yr)
 aData$seasonYr = paste(aData$Season, aData$yr,sep = "-")
-# replace december seasonYr with label to included in the next years winter season
-#hrmedData$seasonYr1 = hrmedData$seasonYr
-#idx = which(  hrmedData$mth == 12 )
-#hrmedData$seasonYr1[idx] = paste(hrmedData$Season[idx], hrmedData$yr[idx]+1, sep = "-")
-#unique( hrmedData$seasonYr1 )
-
 unique( aData$seasonYr )
 YrSeasonData = NULL
 for (yy in 1:length(unique_years) ) { # yy = 1
