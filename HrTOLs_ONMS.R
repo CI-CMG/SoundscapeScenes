@@ -1,12 +1,10 @@
-# ONMS plot for average sound levels by season
+# COMPILE SOUNDSCAPE METRICS
+# assumes data are already downloaded from cloud, stored locally
+# runs one site at a time, checks for files already processed
+# adds wind estimate from PAMscapes for any new data
+# outputs hourly TOLs values and list of files processed
+
 rm(list=ls()) 
-
-# assumes data are already downloaded from cloud
-# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/mb01 F:/ONMS/mb01
-# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/sb03 F:/ONMS/sb03
-# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/oc02 F:/ONMS/oc02
-
-
 library(PAMscapes)
 library(lubridate)
 library(dplyr)
@@ -15,54 +13,116 @@ library(reshape)
 
 # SET UP PARAMS ####
 DC = Sys.Date()
+site  = "MB02"
+dirTop = "F:\\SanctSound" # SANCTSOUND
+site = tolower(site) # "mb01"
+inDir = paste0( "F:/ONMS/",site) #NCEI GCP 
 outputDir = "F:/ONMS/"
+outDir = paste0(outputDir, tolower(site),"/" )
+
+# CHECK FOR PROCESSED FILES #### 
+load( list.files(path = outDir, pattern = "filesProcesed_", full.names = T, recursive = T) )
+inFile = list.files(outDir, pattern = "data", full.names = T)
+file_info <- file.info(inFile)
+load( inFile[which.max(file_info$ctime)] )
+
+#for testing remove first and last
+# processedFiles[1]
+# ed = (length(processedFiles))-1
+# processedFiles = processedFiles[1:ed]
+# processedFiles[1]
+cat("Already processed ", length(processedFiles), " files for ", site)
 
 ## SanctSound FILES - ERDAP ####
-site  = "MB01"
-dirTop = "F:\\SanctSound" 
-inFiles = list.files(path = dirTop, pattern = site, full.names = T, recursive = T)
+#NOTE- might need to change these in some of the files 31_5 to 31.5 and UTC with : not _
+inFiles = list.files(path = dirTop, pattern = toupper(site), full.names = T, recursive = T)
 filesTOL = inFiles[grepl("TOL_1h", inFiles)] 
 inFiles = filesTOL[!grepl("/analysis/", filesTOL)] 
 inFiles = inFiles[!grepl("1h.nc", inFiles)] 
+inFiles = inFiles[!basename(inFiles) %in% processedFiles]
+cat("processing ", length(inFiles), "new files")
 sData = NULL
-for (ii in 1:length(inFiles)) { # ii = 3
-  
-  tmpFile = inFiles[ii]
-  typ = sapply( strsplit(basename(tmpFile), "[.]"), "[[",2)
-  tmp = loadSoundscapeData( inFiles[ii], extension = typ)
-  cat( inFiles[ii], "Start = ", as.character( as.Date( min(tmp$UTC) ) ),"\n")
-  sData = rbind(sData, tmp)
+if (length(inFiles) > 0 ) {
+  for (ii in 1:length(inFiles)) { # ii = 3
+    
+    tmpFile = inFiles[ii]
+    typ = sapply( strsplit(basename(tmpFile), "[.]"), "[[",2)
+    tmp = loadSoundscapeData( inFiles[ii], extension = typ)
+    cat( inFiles[ii], "Start = ", as.character( as.Date( min(tmp$UTC) ) ),"\n")
+    sData = rbind(sData, tmp)
+  }
+  sData$site = tolower(site)
+  sData$yr   = year(sData$UTC)
+  sData$mth  = month(sData$UTC)
+  inFilesS = inFiles
 }
-sData$site = tolower(site)
-sData$yr   = year(sData$UTC)
-sData$mth  = month(sData$UTC)
 
 ## Manta Files- NCEI ####
-site = tolower(site) # "mb01"
-inDir = paste0( "F:/ONMS/",site) 
+# download before running... 
+# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/mb01 F:/ONMS/mb01
+# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/sb03 F:/ONMS/sb03
+# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/oc02 F:/ONMS/oc02
+# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/mb02  F:\ONMS\mb02
 inFiles = list.files(inDir, pattern = "MinRes.nc", recursive = T, full.names = T)
+inFiles = inFiles[!basename(inFiles) %in% processedFiles]
+cat("processing ", length(inFiles), "new files")
 cData = NULL  
-for (f in 1:length(inFiles) ){
-  ncFile = inFiles[f]
-  hmdData = loadSoundscapeData(ncFile)
-  tolData = createOctaveLevel(hmdData, type='tol')
-  tolData$site = site
-  cData = rbind( cData, tolData )
+if (length(inFiles) > 0 ) {
+  for (f in 1:length(inFiles) ){
+    ncFile = inFiles[f]
+    hmdData = loadSoundscapeData(ncFile)
+    tolData = createOctaveLevel(hmdData, type='tol')
+    tolData$site = site
+    cData = rbind( cData, tolData )
+  }
+  cData$yr  = year(cData$UTC)
+  cData$mth = month(cData$UTC)
+  min(cData$UTC)
+  cDatah = binSoundscapeData(cData, bin = "1hour", method = c("median") )
 }
-cData$yr  = year(cData$UTC)
-cData$mth = month(cData$UTC)
-min(cData$UTC)
-cDatah = binSoundscapeData(cData, bin = "1hour", method = c("median") )
 
 ## COMBINE DATA ####
-sData$Latitude  = cDatah$Latitude[1]
-sData$Longitude = cDatah$Longitude[1]
-cData_mismatched = setdiff(colnames(cDatah), colnames(sData))
-cData_cleaned = cDatah[, !colnames(cDatah) %in% cData_mismatched]
-# check - setdiff(colnames(cData_cleaned), colnames(sData))
-cData_cleaned = cData_cleaned[, colnames(sData)]
-aData = rbind(cData_cleaned, sData)
+if( length(sData)== 0 & length(cData)==0 ){
+  cat("No new files to process...")
+  
+} else if (length(sData) > 0 ) {
+  # sanctsound data and onms
+  sData$Latitude  = cDatah$Latitude[1]
+  sData$Longitude = cDatah$Longitude[1]
+  cData_mismatched = setdiff(colnames(cDatah), colnames(sData))
+  cData_cleaned = cDatah[, !colnames(cDatah) %in% cData_mismatched]
+  cData_cleaned = cData_cleaned[, colnames(sData)]
+  aData = rbind(aData,cData_cleaned, sData)
+  
+  #SAVE DATA ####
+  save(aData, file = paste0(outDir, "data_", tolower(site), "_HourlySPL_", DC, ".Rda") )
+  #SAVE FILES PROCESSED ####
+  processedFiles  = c(basename(inFilesS), basename(inFiles)) 
+  save(processedFiles, file = paste0(outDir, "filesProcesed_", tolower(site), "_HourlySPL.Rda") )
+  
+  
+  
+} else if (length(sData) == 0 & length(cData) >0) {
+  #just onms data
+  names(cDatah)
+  names(aData)
+  cData_mismatched = setdiff(colnames(cDatah), colnames(aData))
+  cData_cleaned = cDatah[, !colnames(cDatah) %in% cData_mismatched]
+  names(cData_cleaned)
+  aData = rbind(aData,cData_cleaned)
+  
+  #SAVE DATA ####
+  save(aData, file = paste0(outDir, "data_", tolower(site), "_HourlySPL_", DC, ".Rda") )
+  #SAVE FILES PROCESSED ####
+  processedFiles  = c(basename(inFilesS), basename(inFiles)) 
+  save(processedFiles, file = paste0(outDir, "filesProcesed_", tolower(site), "_HourlySPL.Rda") )
+  
+  
+}
+  
 
+
+# RUN hrTOLs_ONMS.R (below is just testing) ####
 # ADD SEASON LABEL ####
 aData$Season[aData$mth == 12] = "winter" 
 aData$Season[aData$mth == 1] = "winter"
@@ -77,7 +137,6 @@ aData$Season[aData$mth == 9] = "fall"
 aData$Season[aData$mth == 10] = "fall"
 aData$Season[aData$mth == 11] = "fall"
 seasons = unique(aData$Season)
-save(      aData, file = paste0(outDir, "data_", tolower(site), "_HourlySPL_", DC, ".Rda") )
 
 # GET PERCENTILES of hourly medians values by SEASON and year ####
 tol_columns = grep("TOL", colnames(aData))
