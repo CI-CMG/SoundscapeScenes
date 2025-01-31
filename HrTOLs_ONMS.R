@@ -1,8 +1,12 @@
 # COMPILE SOUNDSCAPE METRICS
+
 # assumes data are already downloaded from cloud, stored locally
-# runs one site at a time, checks for files already processed
+# runs for SanctSound and SoundCoop data files (combines)
+# runs one site at a time
+# checks for files already processed
 # adds wind estimate from PAMscapes for any new data
-# outputs hourly TOLs values and list of files processed
+
+# outputs hourly TOLs values with wind speed and list of files processed
 
 rm(list=ls()) 
 library(PAMscapes)
@@ -13,28 +17,46 @@ library(reshape)
 
 # SET UP PARAMS ####
 DC = Sys.Date()
-site  = "MB02"
+site  = "NRS11" #MB02
+
 dirTop = "F:\\SanctSound" # SANCTSOUND
 site = tolower(site) # "mb01"
-inDir = paste0( "F:/ONMS/",site) #NCEI GCP 
+
+inDir = paste0( "F:/ONMS/", site,"/") #NCEI GCP 
 outputDir = "F:/ONMS/"
 outDir = paste0(outputDir, tolower(site),"/" )
 
-# CHECK FOR PROCESSED FILES #### 
-load( list.files(path = outDir, pattern = "filesProcesed_", full.names = T, recursive = T) )
-inFile = list.files(outDir, pattern = "data", full.names = T)
-file_info <- file.info(inFile)
-load( inFile[which.max(file_info$ctime)] )
+# LOAD ONMS Metadata ####
+metaFile = paste0("F:\\CODE\\GitHub\\SoundscapeScenes\\NCEI summary\\ONMSSound_IndicatorCategories.xlsx")
+#metaFile = paste0(onmsDir,"ONMSSound_IndicatorCategories.xlsx")
+lookup = as.data.frame ( read.xlsx(metaFile, sheetIndex = 1) )
+colnames(lookup) = lookup[1, ]         # Set first row as column names
+lookup = as.data.frame( lookup[-1, ] ) # Remove the first row
+lookup = as.data.frame( lookup[!apply(lookup, 1, function(row) all(is.na(row))), ] )
+siteInfo = lookup[lookup$`NCEI ID` == site,]
+siteInfo = siteInfo[!is.na(siteInfo$`NCEI ID`), ]
 
-#for testing remove first and last
-# processedFiles[1]
-# ed = (length(processedFiles))-1
-# processedFiles = processedFiles[1:ed]
-# processedFiles[1]
-cat("Already processed ", length(processedFiles), " files for ", site)
+# CHECK FOR PROCESSED FILES #### 
+pFile = list.files(path = outDir, pattern = "filesProcesed_", full.names = T, recursive = T)
+if (length(pFile) > 0 ) {
+  #not working...
+  load( list.files(path = outDir, pattern = "filesProcesed_", full.names = T, recursive = T) )
+  inFile = list.files(outDir, pattern = "data", full.names = T)
+  file_info = file.info(inFile)
+  load( inFile[which.max(file_info$ctime)] )
+  #for testing remove first and last
+  #processedFiles[1]
+  #ed = (length(processedFiles))-1
+  # processedFiles = processedFiles[1:ed]
+  # processedFiles[1]
+  cat("Already processed ", length(processedFiles), " files for ", site)
+} else {
+  cat("No processed files for ", site)
+  processedFiles = NULL
+}
 
 ## SanctSound FILES - ERDAP ####
-#NOTE- might need to change these in some of the files 31_5 to 31.5 and UTC with : not _
+# NOTE- might need to change these in some of the files 31_5 to 31.5 and UTC with : not _
 inFiles = list.files(path = dirTop, pattern = toupper(site), full.names = T, recursive = T)
 filesTOL = inFiles[grepl("TOL_1h", inFiles)] 
 inFiles = filesTOL[!grepl("/analysis/", filesTOL)] 
@@ -59,11 +81,13 @@ if (length(inFiles) > 0 ) {
 
 ## Manta Files- NCEI ####
 # download before running... 
+# gsutil -m rsync -r gs://noaa-passive-bioacoustic/nrs/products/sound_level_metrics/11 F:/ONMS/nrs11
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/mb01 F:/ONMS/mb01
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/sb03 F:/ONMS/sb03
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/oc02 F:/ONMS/oc02
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/mb02  F:\ONMS\mb02
-inFiles = list.files(inDir, pattern = "MinRes.nc", recursive = T, full.names = T)
+inFiles = list.files(inDir, pattern = "MinRes_v3", recursive = T, full.names = T)
+inFiles = inFiles[!grepl(".csv",inFiles) ]
 inFiles = inFiles[!basename(inFiles) %in% processedFiles]
 cat("processing ", length(inFiles), "new files")
 cData = NULL  
@@ -82,7 +106,7 @@ if (length(inFiles) > 0 ) {
 }
 
 ## COMBINE DATA ####
-if( length(sData)== 0 & length(cData)==0 ){
+if( length(sData) == 0 & length(cData)==0 ){
   cat("No new files to process...")
   
 } else if (length(sData) > 0 ) {
@@ -105,24 +129,31 @@ if( length(sData)== 0 & length(cData)==0 ){
 } else if (length(sData) == 0 & length(cData) >0) {
   #just onms data
   names(cDatah)
-  names(aData)
-  cData_mismatched = setdiff(colnames(cDatah), colnames(aData))
-  cData_cleaned = cDatah[, !colnames(cDatah) %in% cData_mismatched]
-  names(cData_cleaned)
-  aData = rbind(aData,cData_cleaned)
-  
+  if(length(aData)> 0){
+    names(aData) #aleady processed data
+    cData_mismatched = setdiff(colnames(cDatah), colnames(aData))
+    cData_cleaned = cDatah[, !colnames(cDatah) %in% cData_mismatched]
+    names(cData_cleaned)
+    aData = rbind(aData,cData_cleaned)
+    
+  }else{
+    aData = cDatah
+  }
+ 
   #SAVE DATA ####
   save(aData, file = paste0(outDir, "data_", tolower(site), "_HourlySPL_", DC, ".Rda") )
   #SAVE FILES PROCESSED ####
-  processedFiles  = c(basename(inFilesS), basename(inFiles)) 
+  processedFiles  = c(basename(inFiles)) 
   save(processedFiles, file = paste0(outDir, "filesProcesed_", tolower(site), "_HourlySPL.Rda") )
+  #GET WIND/WEATHER DATA
+  gps = matchGFS(aData) #PAMscapes function that matches weather to all 
   
+  save(gps, file = paste0(outDir, "data_", tolower(site), "_HourlySPL-gfs_", DC, ".Rda") )
   
 }
   
-
-
-# RUN hrTOLs_ONMS.R (below is just testing) ####
+# EXTRA ####
+# (below is just testing)
 # ADD SEASON LABEL ####
 aData$Season[aData$mth == 12] = "winter" 
 aData$Season[aData$mth == 1] = "winter"
