@@ -11,11 +11,13 @@ library(scales)
 library(gridExtra)
 library(ggplot2)
 library(tidyverse)
+library(xlsx)
+library(reshape)
 
 DC = Sys.Date()
 project = "ONMS"
-site = "mb02" # nrs11 mb02"
-site1 =  "mb02" #cbnrs11 is weird...
+site = "mb01" # nrs11 mb02"
+site1 =  "mb01" #cbnrs11 is weird...
 outputDir = paste0( "F:/ONMS/", site,"/")
 inDir = "F:\\CODE\\GitHub\\SoundscapeScenes\\NCEI summary\\"
 aisDir = ("F:/ONMS/ais/")
@@ -181,7 +183,7 @@ p = ggplot() +
   scale_x_log10(labels = label_number()) +  # Log scale for x-axis
 
   # Add vertical lines at FQstart
-  geom_vline(data = FOIs, aes(xintercept = FQstart, color = Label), linetype = "dashed", color = "black",size = .5) +
+  geom_vline(data = FOIs, aes(xintercept = FQstart, color = Label), linetype = "dashed", color = "black",linewidth = .5) +
     # Add labels at the bottom of each line
   geom_text(data = FOIs, aes(x = FQstart, y = 50, label = Label), angle = 90, vjust = 1, hjust = 0.5, size = 3) +
   #scale_color_manual(values = setNames(FOI$Color, FOI$Label)) +
