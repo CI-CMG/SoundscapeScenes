@@ -5,6 +5,7 @@
 
 # works for each monitoring site
 
+#LIBRARIES ####
 rm(list=ls()) 
 library(PAMscapes)
 library(scales)
@@ -14,10 +15,17 @@ library(tidyverse)
 library(xlsx)
 library(reshape)
 
+#INPUT PARAMS ####
 DC = Sys.Date()
 project = "ONMS"
-site = "mb01" # nrs11 mb02"
-site1 =  "mb01" #cbnrs11 is weird...
+site = "sb03" # nrs11 mb02"
+site1 =  "sb03" #cbnrs11 is weird...
+fqIn = "TOL_125" 
+ab = 70 # threshold for above frequency in
+fqIn2 = "TOL_100" # no wind model for 125 Hz- ugh!!!
+ab2 = 5
+
+#DIRECTORIES ####
 outputDir = paste0( "F:/ONMS/", site,"/")
 inDir = "F:\\CODE\\GitHub\\SoundscapeScenes\\NCEI summary\\"
 aisDir = ("F:/ONMS/ais/")
@@ -67,7 +75,7 @@ for( ss in 1:length(seas) ){
   moi = as.numeric(unlist(strsplit(as.character(season$Months[ss]), ",")))
   gps$Season[gps$mth %in% moi] = season$Season[ss]
 }
-# add wind category
+## add wind category ####
 hist( gps$windMag )
 gps$wind_category = NA
 gps <- gps %>%
@@ -113,6 +121,7 @@ if (!is.na(siteInfo[24])) {
 
 # PLOTS ####
 ## SPECTRA - seasonal quantiles ####
+### wind bar ####
 # Create the horizontal stacked bar plot with the counts of wind speed categories
 l = ggplot(gps, aes(x = "", fill = wind_category)) +
   geom_bar(stat = "count", position = "stack") +  # Stacked bar chart
@@ -134,19 +143,17 @@ l = ggplot(gps, aes(x = "", fill = wind_category)) +
   scale_fill_manual(values = c("high" = "#FF6666", "med" = "#FFCC66", "low" = "#66CC66"),
                     limits = c("high", "med", "low"))  # Reverse the legend order
 
-
+### quantiles ####
 tol_columns = grep("TOL", colnames(gps))
-
 allData = as.data.frame ( apply(gps[,tol_columns ], 2, quantile, na.rm = T) ) # all data
 allData$Quantile = rownames((allData))
 rownames(allData) <- NULL
-
+### quantiles by season ####
 tol_columns = grep("TOL", colnames(gps))
 season_split = split(gps, gps$Season) # Calculate quantiles for each season
 season_quantiles = lapply(season_split, function(season_data) {
   apply(season_data[, tol_columns, drop = FALSE], 2, quantile, na.rm = TRUE)
 })
-
 tol_columns = grep("TOL", colnames(gps))
 seasonAll = NULL
 for (ii in 1: length(season_quantiles) ) {
@@ -158,6 +165,7 @@ for (ii in 1: length(season_quantiles) ) {
   seasonAll = rbind(seasonAll,tmp)
 }
 seasonAllbb = seasonAll #save the bb measurement
+### convert 1 Hz ####
 tol_columns = grep("TOL", colnames(seasonAll))
 #divide unlog, by the bandwidth, and re-log
 for( cc in 1:length(tol_columns)) {
@@ -166,12 +174,12 @@ for( cc in 1:length(tol_columns)) {
   dtmp = seasonAll[,tol_columns[cc] ]
   seasonAll[,tol_columns[cc] ] = 10*log10 ( (10^(dtmp/10))/ bw )
 }
-
+### format for plot ####
 mallData = melt(seasonAll, id.vars = c("Quantile","Season"), measure.vars = tol_columns)
 mallData$variable = as.numeric( as.character( gsub("TOL_", "", mallData$variable )))
 colnames(mallData) = c("Quantile", "Season", "Frequency" , "SoundLevel" )
 max(gps$windMag, na.rm = T)
-
+### plot ####
 p = ggplot() +
   #median TOL values
   geom_line(data = mallData[mallData$Quantile == "50%",], aes(x = Frequency, y = SoundLevel, color = Season), linewidth = 2) +
@@ -201,13 +209,12 @@ p = ggplot() +
   )
 
 grid.arrange(p,l,heights = c(4, .7))
-#ggsave(filename = paste0(outputDir, "plot_", tolower(site), "_SeasonalSPL_", DC,  ".jpg"), plot = p, width = 8, height = 6, dpi = 300)
-
+ggsave(filename = paste0(outputDir, "plot_", tolower(site), "_SeasonalSPL_", DC,  ".jpg"), plot = p, width = 8, height = 6, dpi = 300)
 names(gps)
 ggplot(gps, aes(x = windMag , y = TOL_125 )) +
   geom_point()
 
-# CONVERT ALL DATA TO 1 Hz 
+## CONVERT ALL DATA TO 1 Hz  ####
 gpsBB = gps
 tol_columns = grep("TOL", colnames(gps))
 names(gps)
@@ -221,24 +228,24 @@ for( cc in 1:length(tol_columns)) {
 gpsBB$TOL_125[1] - gps$TOL_125[1]
 
 ## TIME SERIES - median 125 Hz TOL ####
-fqIn = "TOL_125" 
 cols_to_select = c("UTC", "windMag","wind_category",fqIn)
 gpsFQ = gps %>% select(all_of(cols_to_select))
 wspeeds = unique( (windModel$windSpeed) )
 gpsFQ$closest_windMag = wspeeds[pmax(1, findInterval(gpsFQ$windMag, wspeeds)+1)]
+### daily percentiles ####
 dailyFQ = gpsFQ %>%
   mutate(Date = as.Date(UTC)) %>%
   group_by(Date) %>%
   summarise(
-    TOL100_25 = quantile(TOL_125, 0.25, na.rm = TRUE),
-    TOL100_50 = quantile(TOL_125, 0.50, na.rm = TRUE),
-    TOL100_75 = quantile(TOL_125, 0.75, na.rm = TRUE),
+    TOL100_25 = quantile(.data[[fqIn]], 0.25, na.rm = TRUE),
+    TOL100_50 = quantile(.data[[fqIn]], 0.50, na.rm = TRUE),
+    TOL100_75 = quantile(.data[[fqIn]], 0.75, na.rm = TRUE),
     windspeed = quantile(windMag, 0.50, na.rm = TRUE)
   )
-names(dailyFQ)
+# names(dailyFQ)
 dailyFQ$yr = year(dailyFQ$Date)
 dailyFQ$Julian = yday(dailyFQ$Date)
-
+### fill in days ####
 dailyFQ_complete <- dailyFQ %>%
   group_by(yr) %>%
   complete(Julian = seq(min(Julian), max(Julian), by = 1)) %>%  # Fill in missing days
@@ -246,10 +253,8 @@ dailyFQ_complete <- dailyFQ %>%
 monthly_sequence <- seq.Date(as.Date("2021-01-01"), as.Date("2021-12-01"), by = "month")
 month_names_seq <- format(monthly_sequence, "%b")  # Extracts full month names
 days_of_year_for_months <- yday(monthly_sequence)
-
-# Calculate percentage of TOL100_50 > 60 for each year
-names(dailyFQ )
-ab = 70
+### calculate percentage above ####
+# TOL100_50 > 60 for each year
 percentage_above <- dailyFQ %>%
   mutate(year = year(Date)) %>%  # Create 'year' column from Date
   group_by(year) %>%  # Group by year
@@ -258,8 +263,7 @@ percentage_above <- dailyFQ %>%
     count_above = sum(TOL100_50 > ab, na.rm = TRUE),  # Count of values > 60
     percentage_above = (count_above / total_count) * 100  # Percentage calculation
   )
-percentage_above
-
+# percentage_above
 yrs = unique(dailyFQ_complete$yr)
 dailyFQ_complete$facet_title = NA
 for ( ii in 1:length(yrs ) ) {
@@ -267,7 +271,7 @@ for ( ii in 1:length(yrs ) ) {
  idx2 =  which(percentage_above$year == yrs[ii])
  dailyFQ_complete$facet_title[idx] = paste0(yrs[ii], "- ", round(percentage_above$percentage_above[idx2]),"% above" )
 }
-
+### plot ####
 ggplot(dailyFQ_complete, aes(x = Julian, y = TOL100_50, group = yr, color = factor(yr))) +
   geom_line(size = 1, na.rm = T) +
   #geom_point(size = 2) +
@@ -292,14 +296,13 @@ ggplot(dailyFQ_complete, aes(x = Julian, y = TOL100_50, group = yr, color = fact
   ) 
 
 ## TIME SERIES - exceedence 100 Hz  ####
-fqIn = "TOL_100" # no wind model for 125 Hz- ugh!!!
-cols_to_select = c("UTC", "windMag","wind_category",fqIn)
+cols_to_select = c("UTC", "windMag","wind_category",fqIn2)
 gpsFQ = gps %>% select(all_of(cols_to_select))
 #ADD wind speed estimate for each hour of data in frequency of interest
 wspeeds = unique( (windModel$windSpeed) )
 gpsFQ$closest_windMag = wspeeds[pmax(1, findInterval(gpsFQ$windMag, wspeeds)+1)]
 # what is the spl values for that windspeed?
-fqIdx = which( colnames( windInfo) == '100')
+fqIdx = which( colnames( windInfo) == substr( fqIn2, 5,8)) #'100'
 wsIdx <- match(gpsFQ$closest_windMag, windInfo$windSpeed)
 gpsFQ$WindModel100 <- windInfo[wsIdx, fqIdx]
 names(gpsFQ)
@@ -313,9 +316,9 @@ dailyFQ = gpsFQ %>%
     Exceed_25 = quantile(Exceed, 0.25, na.rm = TRUE),
     Exceed_50 = quantile(Exceed, 0.50, na.rm = TRUE), # Median
     Exceed_75 = quantile(Exceed, 0.75, na.rm = TRUE),
-    TOL100_25 = quantile(TOL_100, 0.25, na.rm = TRUE),
-    TOL100_50 = quantile(TOL_100, 0.50, na.rm = TRUE),
-    TOL100_75 = quantile(TOL_100, 0.75, na.rm = TRUE),
+    TOL100_25 = quantile(.data[[fqIn2]], 0.25, na.rm = TRUE),
+    TOL100_50 = quantile(.data[[fqIn2]], 0.50, na.rm = TRUE),
+    TOL100_75 = quantile(.data[[fqIn2]], 0.75, na.rm = TRUE),
     windspeed = quantile(windMag, 0.50, na.rm = TRUE)
   )
 
@@ -326,17 +329,17 @@ dailyFQ_complete <- dailyFQ %>%
   group_by(yr) %>%
   complete(Julian = seq(min(Julian), max(Julian), by = 1)) %>%  # Fill in missing days
   arrange(yr, Julian) 
-ab = 5
+### calculate % above ####
 percentage_above <- dailyFQ %>%
   mutate(year = year(Date)) %>%  # Create 'year' column from Date
   group_by(year) %>%  # Group by year
   summarise(
     total_count = n(),  # Total number of rows for each year
-    count_above = sum(Exceed_50 > ab, na.rm = TRUE),  # Count of values > 60
+    count_above = sum(Exceed_50 > ab2, na.rm = TRUE),  # Count of values > 60
     percentage_above = (count_above / total_count) * 100  # Percentage calculation
   )
 percentage_above
-
+### graphic titles ####
 yrs = unique(dailyFQ_complete$yr)
 dailyFQ_complete$facet_title = NA
 for ( ii in 1:length(yrs ) ) {
@@ -344,8 +347,7 @@ for ( ii in 1:length(yrs ) ) {
   idx2 =  which(percentage_above$year == yrs[ii])
   dailyFQ_complete$facet_title[idx] = paste0(yrs[ii], "- ", round(percentage_above$percentage_above[idx2]),"% above" )
 }
-
-
+### plot ####
 pE = ggplot(dailyFQ_complete, aes(x = Julian, y = Exceed_50, group = yr, color = factor(yr))) +
   geom_line(size = 1, na.rm = T) +
   #geom_point(size = 2) +
@@ -354,7 +356,7 @@ pE = ggplot(dailyFQ_complete, aes(x = Julian, y = Exceed_50, group = yr, color =
   facet_wrap(~facet_title, nrow = length(unique(dailyFQ$yr)) ) +
   theme_minimal()+
   scale_x_continuous( breaks = days_of_year_for_months, label = month_names_seq) +  # Show every 30 days
-  geom_hline(aes(yintercept = ab), linetype = "dashed", color = "gray", size = .7) +
+  geom_hline(aes(yintercept = ab2), linetype = "dashed", color = "gray", size = .7) +
   #geom_hline(aes(yintercept = 10), linetype = "dashed", color = "gray",size = .5) +
   theme(
     legend.position = "none",
@@ -364,7 +366,7 @@ pE = ggplot(dailyFQ_complete, aes(x = Julian, y = Exceed_50, group = yr, color =
   labs(
     title = paste0("Noise exceedence at 100 Hz") ,
     subtitle =  paste0(FOI$Oceanographic.setting[1], " Monitoring Site at ", tolower(site)) ,
-    caption = "Exceedence based on estimate of sound level from modeled wind speed",
+    caption = paste0("Exceedance based on estimate of sound level from modeled wind speed (threshold = ", ab2,")"),
     x = "",
     y = expression(paste("Sound Levels (125 Hz dB re 1", mu, " Pa/Hz)" ) ),
     color = "Year"  # Label for the color legend
@@ -372,5 +374,10 @@ pE = ggplot(dailyFQ_complete, aes(x = Julian, y = Exceed_50, group = yr, color =
 pE
 # ggplotly(pE)
 
-ggplot(dailyFQ, aes(x = TOL100_50, y = windspeed)) +
-  geom_point()
+## SPECTRA- AIS vs SPL ####
+# plot spectra when ships present vs not present- ships present in a given hour
+# want to also calculate noise exceedance when AIS ships are present, use gpsFQ
+if (nrow(ais) > 0 ){
+  ### match AIS with SPL data (gps)
+  
+} else { cat("No AIS data for this location")}

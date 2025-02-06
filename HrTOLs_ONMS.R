@@ -17,7 +17,7 @@ library(reshape)
 
 # SET UP PARAMS ####
 DC = Sys.Date()
-site  = "NRS11" #MB02
+site  = "sb03" #MB02
 
 dirTop = "F:\\SanctSound" # SANCTSOUND
 site = tolower(site) # "mb01"
@@ -44,15 +44,16 @@ if (length(pFile) > 0 ) {
   inFile = list.files(outDir, pattern = "data", full.names = T)
   file_info = file.info(inFile)
   load( inFile[which.max(file_info$ctime)] )
-  #for testing remove first and last
-  #processedFiles[1]
-  #ed = (length(processedFiles))-1
+  # for testing remove first and last
+  # processedFiles[1]
+  # ed = (length(processedFiles))-1
   # processedFiles = processedFiles[1:ed]
   # processedFiles[1]
   cat("Already processed ", length(processedFiles), " files for ", site)
 } else {
   cat("No processed files for ", site)
   processedFiles = NULL
+  aData = NULL # this is the already processed data that needs to be binded to new data
 }
 
 ## SanctSound FILES - ERDAP ####
@@ -86,8 +87,10 @@ if (length(inFiles) > 0 ) {
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/sb03 F:/ONMS/sb03
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/oc02 F:/ONMS/oc02
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/mb02  F:\ONMS\mb02
-inFiles = list.files(inDir, pattern = "MinRes_v3", recursive = T, full.names = T)
+inFiles = list.files(inDir, pattern = "MinRes", recursive = T, full.names = T)
+inFiles = inFiles[!grepl(".png",inFiles) ]
 inFiles = inFiles[!grepl(".csv",inFiles) ]
+inFiles = inFiles[!grepl("_netCDF",inFiles) ]
 inFiles = inFiles[!basename(inFiles) %in% processedFiles]
 cat("processing ", length(inFiles), "new files")
 cData = NULL  
@@ -106,52 +109,69 @@ if (length(inFiles) > 0 ) {
 }
 
 ## COMBINE DATA ####
-if( length(sData) == 0 & length(cData)==0 ){
-  cat("No new files to process...")
+if( length(sData) == 0 & length(cData)==0 ){ # No new files
   
-} else if (length(sData) > 0 ) {
-  # sanctsound data and onms
+  cat("No new files to process...") 
+  #nothing new saved
+  
+} else if ( length(sData) > 0 & length(aData) == 0 ) { 
+  
+  #SanctSound + ONMS data but no processed data 
+  aData = NULL  
   sData$Latitude  = cDatah$Latitude[1]
   sData$Longitude = cDatah$Longitude[1]
   cData_mismatched = setdiff(colnames(cDatah), colnames(sData))
   cData_cleaned = cDatah[, !colnames(cDatah) %in% cData_mismatched]
   cData_cleaned = cData_cleaned[, colnames(sData)]
-  aData = rbind(aData,cData_cleaned, sData)
+  aData = rbind(aData, cData_cleaned, sData)
   
   #SAVE DATA ####
   save(aData, file = paste0(outDir, "data_", tolower(site), "_HourlySPL_", DC, ".Rda") )
   #SAVE FILES PROCESSED ####
   processedFiles  = c(basename(inFilesS), basename(inFiles)) 
   save(processedFiles, file = paste0(outDir, "filesProcesed_", tolower(site), "_HourlySPL.Rda") )
-  
-  
-  
-} else if (length(sData) == 0 & length(cData) >0) {
-  #just onms data
-  names(cDatah)
-  if(length(aData)> 0){
-    names(aData) #aleady processed data
-    cData_mismatched = setdiff(colnames(cDatah), colnames(aData))
-    cData_cleaned = cDatah[, !colnames(cDatah) %in% cData_mismatched]
-    names(cData_cleaned)
-    aData = rbind(aData,cData_cleaned)
-    
-  }else{
-    aData = cDatah
-  }
- 
-  #SAVE DATA ####
-  save(aData, file = paste0(outDir, "data_", tolower(site), "_HourlySPL_", DC, ".Rda") )
-  #SAVE FILES PROCESSED ####
-  processedFiles  = c(basename(inFiles)) 
-  save(processedFiles, file = paste0(outDir, "filesProcesed_", tolower(site), "_HourlySPL.Rda") )
   #GET WIND/WEATHER DATA
   gps = matchGFS(aData) #PAMscapes function that matches weather to all 
-  
   save(gps, file = paste0(outDir, "data_", tolower(site), "_HourlySPL-gfs_", DC, ".Rda") )
   
-}
+} else if (length(sData) == 0 & length(cData) > 0) {  # just onms data
+ 
   
+  if (length(aData) > 0){ #already processed data
+    
+    cData_mismatched = setdiff(colnames(cDatah), colnames(aData))
+    cData_cleaned = cDatah[, !colnames(cDatah) %in% cData_mismatched]
+    aData = rbind(aData, cData_cleaned)
+    
+    #SAVE DATA ####
+    save(aData, file = paste0(outDir, "data_", tolower(site), "_HourlySPL_", DC, ".Rda") )
+    
+    #SAVE FILES PROCESSED ####
+    processedFiles  = c(basename(inFiles)) 
+    save(processedFiles, file = paste0(outDir, "filesProcesed_", tolower(site), "_HourlySPL.Rda") )
+    
+    #?? do not re-run this for already processed data ####
+    #need to update
+    #GET WIND/WEATHER DATA
+    #gps = matchGFS(aData) #PAMscapes function that matches weather to all 
+    #save(gps, file = paste0(outDir, "data_", tolower(site), "_HourlySPL-gfs_", DC, ".Rda") )
+    
+  } else { #no already processed data
+    
+    aData = cDatah
+    #SAVE DATA ####
+    save(aData, file = paste0(outDir, "data_", tolower(site), "_HourlySPL_", DC, ".Rda") )
+    #SAVE FILES PROCESSED ####
+    processedFiles  = c(basename(inFiles)) 
+    save(processedFiles, file = paste0(outDir, "filesProcesed_", tolower(site), "_HourlySPL.Rda") )
+    
+    #GET WIND/WEATHER DATA
+    gps = matchGFS(aData) #PAMscapes function that matches weather to all 
+    save(gps, file = paste0(outDir, "data_", tolower(site), "_HourlySPL-gfs_", DC, ".Rda") )
+  }
+  
+}
+
 # EXTRA ####
 # (below is just testing)
 # ADD SEASON LABEL ####
@@ -248,7 +268,7 @@ colnames(mYrSeasonData) = c("Quantile", "Season",   "Year" ,    "frequency" , "S
 
 p = ggplot()+
   geom_line(data = mYrSeasonData[ mYrSeasonData$Quantile == "50%",], aes(x = frequency, y = SoundLevel, color = Season), size = 2 ) +
-
+  
   facet_wrap(~Year,nrow = length(unique(YrSeasonData$Year))) +
   scale_x_log10() +
   scale_color_manual(values = c("fall" = "#dfc27d", "spring" = "#80cdc1","winter" = "#a6611a","summer" = "#018571") ) +
