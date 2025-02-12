@@ -377,7 +377,122 @@ pE
 ## SPECTRA- AIS vs SPL ####
 # plot spectra when ships present vs not present- ships present in a given hour
 # want to also calculate noise exceedance when AIS ships are present, use gpsFQ
-if (nrow(ais) > 0 ){
-  ### match AIS with SPL data (gps)
+cat("AIS data for ", site, as.character( min(ais$Start) ), " to ", as.character( max(ais$Start) ))
+gps$GMT =as.POSIXct(gps$UTC,"GMT")
+
+### truncate gps data ####
+# to only data within the AIS range
+rm(gpsAIS)
+gpsAIS  = gps[ gps$UTC > min(ais$Start) & gps$UTC <=  max(ais$Start), ]
+gpsAIS$numAIS = 0  #number of ship transits during that hour
+gpsAIS$minAIS = NA #minimum distance for ships during that hour
+gpsAIS$avgAIS = NA #average speed of ships during that hour
+cat("removed ", nrow(gps) - nrow(gpsAIS), "hours because no AIS data")
+
+### AIS match ####
+if ( nrow(ais) > 0 ){
+  
+  for (ii in 1: nrow(gpsAIS) ){
+    
+    #get all vessel transits that within the hour?
+    AIStmp = ais[ais$Start >= gpsAIS$GMT [ii] & ais$Start < gpsAIS$GMT[ii] + (3600), ] 
+    if (  nrow(AIStmp) > 0 ){
+      gpsAIS$numAIS[ii] =  nrow(AIStmp)
+      gpsAIS$minAIS[ii]  = min(AIStmp$dist_nm, na.rm = T)
+      gpsAIS$avgAIS[ii]  = mean(as.numeric( as.character( AIStmp$avg_sog_dw )), na.rm = T)
+    }
+  }
   
 } else { cat("No AIS data for this location")}
+# hist( gpsAIS$numAIS )
+
+### AIS categories ####
+gpsAIS$ais_category = NA
+gpsAIS <- gpsAIS %>%
+  mutate(ais_category = case_when(
+    is.na(numAIS) ~ NA_character_,
+    numAIS == 0 ~ "0-none",
+    numAIS > 0 & numAIS <= 1 ~ "1-low",
+    numAIS > 1 & numAIS <= 3 ~ "2-med",
+    numAIS > 3 ~ "3-high"
+  ))
+category_counts <- gpsAIS %>%
+  count(ais_category) %>%
+  mutate(label = paste(ais_category, ":", n))
+subtitle_text <- paste(category_counts$label, collapse = ", ")
+category_counts
+
+### quantiles by ais ####
+tol_columns = grep("TOL", colnames(gpsAIS))
+season_split = split(gpsAIS, gpsAIS$ais_category) # Calculate quantiles for each season
+season_quantiles = lapply(season_split, function(season_data) {
+  apply(season_data[, tol_columns, drop = FALSE], 2, quantile, na.rm = TRUE)
+})
+unique( gpsAIS$numAIS[ gpsAIS$ais_category == "3-high"] )
+
+tol_columns = grep("TOL", colnames(gpsAIS))
+seasonAll = NULL
+for (ii in 1: length(season_quantiles) ) {
+  tmp = as.data.frame ( season_quantiles[ii] ) 
+  colnames(tmp) = colnames(gpsAIS)[tol_columns]
+  tmp$Quantile = rownames(tmp)
+  tmp$Season = names(season_quantiles)[ii]
+  rownames(tmp) = NULL
+  seasonAll = rbind(seasonAll,tmp)
+}
+
+### format for plot ####
+tol_columns = grep("TOL", colnames(seasonAll))
+mallData = melt(seasonAll, id.vars = c("Quantile","Season"), measure.vars = tol_columns)
+mallData$variable = as.numeric( as.character( gsub("TOL_", "", mallData$variable )))
+colnames(mallData) = c("Quantile", "AIS", "Frequency" , "SoundLevel" )
+names(mallData)
+unique(mallData$AIS)
+stAIS = as.Date( min(gpsAIS$UTC) )
+edAIS = as.Date( max(gpsAIS$UTC) )
+### plot ####
+lais = ggplot(gpsAIS, aes(x = "", fill = ais_category)) +
+  geom_bar(stat = "count", position = "stack") +  # Stacked bar chart
+  coord_flip() +  # Flip the coordinates to make it horizontal
+  ggtitle("AIS vessels") +  # Add the main title
+  theme_minimal() +
+  labs(x = NULL, y = NULL) +  # Remove x-axis label
+  theme(
+    plot.title = element_text(hjust = 0),  # Align the title to the left
+    axis.text.y = element_blank(),
+    axis.text.x = element_blank(),  # Remove x-axis labels (now categories will appear below)
+    axis.ticks.x = element_blank(),  # Remove x-axis ticks
+    axis.title.x = element_blank(),  # Remove x-axis title
+    legend.position = "bottom",  # Position the legend at the bottom
+    legend.title = element_blank(),  # Optional: remove legend title
+    legend.text = element_text(size = 10)  # Optional: adjust legend text size
+  ) +
+  scale_x_discrete(labels = category_counts$wind_category) +  # Place the category labels under the plot
+  scale_fill_manual(values = c("0-none" = "#56B4E9", "1-low" = "#009E73", "3-high" = "#CC79A7", 
+                               "2-med" = "#E69F00"))  # Reverse the legend order
+
+pais = ggplot() +
+  #median TOL values
+  geom_line(data = mallData[mallData$Quantile == "50%",], 
+            aes(x = Frequency, y = SoundLevel, color = AIS), linewidth = 1) +
+  scale_color_manual(values = c("0-none" = "#56B4E9", 
+                                "1-low" = "#009E73", 
+                                "3-high" = "#CC79A7", 
+                                "2-med" = "#E69F00")) +
+  geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == "22.6",], 
+            aes(x = variable, y = value), color = "gray", linetype = "dotted", linewidth = 1) +
+  geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == "1",], 
+            aes(x = variable, y = value), color = "gray", linetype = "dotted", linewidth = 1) +
+  scale_x_log10(labels = label_number()) +  # Log scale for x-axis
+  
+  # Additional aesthetics
+  theme_minimal()+
+  theme(legend.position = "top",
+        plot.title = element_text(size = 16, face = "bold", hjust = 0)) + 
+  labs(
+    title = paste0(FOI$Oceanographic.setting[1], " Monitoring Site at ", tolower(site), " (", stAIS, " to ", edAIS, ")"),
+    caption = "dotted lines are modeled wind noise at this depth (22 m/s and >1 m/s) from Hildebrand 2021", 
+    x = "Frequency Hz",
+    y = expression(paste("Sound Levels (dB re 1", mu, " Pa third-octave bands)" ) )
+  )
+grid.arrange(pais,lais,heights = c(4, .7))
