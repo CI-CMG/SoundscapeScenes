@@ -211,8 +211,11 @@ p = ggplot() +
 grid.arrange(p,l,heights = c(4, .7))
 ggsave(filename = paste0(outputDir, "plot_", tolower(site), "_SeasonalSPL_", DC,  ".jpg"), plot = p, width = 8, height = 6, dpi = 300)
 names(gps)
-ggplot(gps, aes(x = windMag , y = TOL_125 )) +
-  geom_point()
+#? fix this ####
+ggplot(gps, aes(x = windMag , y = TOL_500), color = ( "mth" ))+
+  geom_point()+
+  #geom_smooth()+
+  scale_x_log10()
 
 ## CONVERT ALL DATA TO 1 Hz  ####
 gpsBB = gps
@@ -372,6 +375,7 @@ pE = ggplot(dailyFQ_complete, aes(x = Julian, y = Exceed_50, group = yr, color =
     color = "Year"  # Label for the color legend
   ) 
 pE
+
 # ggplotly(pE)
 
 ## SPECTRA- AIS vs SPL ####
