@@ -1,0 +1,10 @@
+Oceanographic setting,Sanctuary,FQstart,FQend,Xoffset,Label,Color,Size
+Nearshore,MB,125,125,37,Ship Noise,orange,3
+Nearshore,MB,40,40,13,Ocean Noise,orange,3
+Nearshore,MB,350,350,120,Humpback,blue,3
+Nearshore,MB,400,400,150,fish chorus,blue,3
+Nearshore,MB,10000,10000,500,Snapping Shrimp,blue,3
+Offshore,MB,63,63,13,Ship Noise,orange,3
+Offshore,MB,40,40,13,Ocean Noise,orange,3
+Offshore,MB,20,20,13,Fin Whale,blue,3
+Offshore,MB,47,47,13,Blue Whale,blue,3

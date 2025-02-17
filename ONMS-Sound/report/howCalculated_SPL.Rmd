@@ -1,0 +1,15 @@
+---
+title:  "How this was calculated?"
+author: "ONMS Sound"
+date:   "2025-02-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Seasonal Sound Levels
+
+The median PSD for all hours for all years are shown for each of the available one-third octave frequency bands. To calculate these values, audio data were calibrated and processed into sound levels measurements using either Triton Soundscape Metrics, MANTA (Ref) or PyPAM software options. Triton software, calculate power spectral density (PSD) levels per hour as the median of mean-square pressure amplitude (μPa2) with a resolution of 1 Hz/1 second over no less than 1800 seconds in each hour and converted to decibels (dB re 1 μPa2/Hz). The one-third octave band sound pressure levels were calculated by integration of PSD levels with a 1 Hz/1 second resolution. Then a median was used to calculate hourly values as a median over no less than 1,800 1-s values for that hour and converted to decibels (dB re 1 μPa). MANTA and PyPAM software calculates the sound pressure spectral density (PSD) levels in units of 1 µPa2 Hz-1 using Welch's Method in Matlab. The Discrete Fourier Transform length is equal to the sample rate, a Hann window of equal length is applied to the data and 50% overlap is used. This results in PSD estimates of mean-square pressure amplitude (µPa2) with a frequency resolution of 1 Hz and temporal resolution of 1 s. The PSD estimates from each 1-minute segment are averaged, and the average spectrum for each minute is further processed to the HMD spectrum as dB re 1 µPa2 Hz-1, as defined in Martin et al. (2021a). These values were then converted to hourly one-third octave band PSDs. 
+
