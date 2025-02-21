@@ -18,8 +18,8 @@ library(reshape)
 #INPUT PARAMS ####
 DC = Sys.Date()
 project = "ONMS"
-site = "sb03" # nrs11 mb02"
-site1 =  "sb03" #cbnrs11 is weird...
+site = "cb11" # nrs11 mb02"
+site1 =  "nrs11" #cbnrs11 is weird...
 fqIn = "TOL_125" 
 ab = 70 # threshold for above frequency in
 fqIn2 = "TOL_100" # no wind model for 125 Hz- ugh!!!
@@ -28,7 +28,13 @@ ab2 = 5
 #DIRECTORIES ####
 outDir =  "F:\\CODE\\GitHub\\SoundscapeScenes\\ONMS-Sound\\" 
 outDirC = paste0( outDir,"context\\") #context
-outDirP = paste0( outDir,"products\\", substr(tolower(site),start = 1, stop =2),"\\" )#products
+if (site == "cb11"){
+  outDirP = paste0( outDir,"products\\", substr(tolower(site), start = 1, stop =2),"\\" ) #products
+  site = "nrs11"
+}else (
+  outDirP = paste0( outDir,"products\\", substr(tolower(site), start = 1, stop =2),"\\" )#products
+)
+
 outDirG = paste0( outDir,"report\\" ) #graphics
   
 # LOAD ONMS Metadata ####
