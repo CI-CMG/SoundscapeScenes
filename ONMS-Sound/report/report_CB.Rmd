@@ -46,12 +46,17 @@ The **`r params$author`** (`r params$abrv`) is entirely offshore. Within its 1,2
 
 **Ocean sound monitoring** in this sanctuary began in 2014, as part of the [**Ocean Noise Reference Station**](https://www.pmel.noaa.gov/acoustics/noaanps-ocean-noise-reference-station-network). This unique network of hydrophones is a collaborative effort between Pacific Marine Environmental Laboratory, all NMFS Science Centers, the NOS National Marine Sanctuary System, and the National Park Service to establish and collect consistent and comparable long-term acoustic data sets covering all major regions of the U.S. The primary objective of the this network is to [monitoring trends in Ocean Noise](https://www.sciencedirect.com/science/article/pii/S0308597X17306309), a critical aspect of NOAA's mandate for ocean and coastal stewardship.
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE,out.width="50%", out.height="50%"}
 # Print table with text wrapping
 siteDetails %>% 
   kable("html") %>% 
   kable_styling(full_width = FALSE) %>% 
   scroll_box(width = "100%", height = "400px")
+```
+# **Summary of Monitoring Effort**
+```{r, echo=FALSE, warning=FALSE, fig.show="hold", message = FALSE}
+knitr::include_graphics("plot_nrs11_Effort.jpg")
+knitr::include_graphics("plot_nrs11_SeasonalSPL.jpg")
 ```
 
 # **What sounds contribute to the soundscape?**
@@ -59,7 +64,7 @@ siteDetails %>%
 library(knitr)
 
 # Load and display an image with a caption
-knitr::include_graphics("plot_nrs11_SeasonalSPL_2025-02-10.jpg")
+knitr::include_graphics("plot_nrs11_SeasonalSPL.jpg")
 
 ```
 
