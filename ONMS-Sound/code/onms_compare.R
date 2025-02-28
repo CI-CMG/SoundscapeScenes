@@ -9,13 +9,15 @@ library(dplyr)
 library(reshape)
 library(ggplot2)
 
-dataDir = "F:\\SanctSound\\"
-outDir  = "F:\\CODE\\GitHub\\SoundscapeScenes\\NCEI summary\\"
+outDir =  "F:\\CODE\\GitHub\\SoundscapeScenes\\ONMS-Sound\\" 
+dirSS = "F:\\SanctSound" # SANCTSOUND
+outDirC = paste0( outDir,"context\\") #context
+outDirG = paste0( outDir,"report\\" ) #graphics
 
 # LOAD ONMS Metadata ####
 habitat = "shelf"
-siteFocus = "MB02"
-metaFile = paste0(outDir,"ONMSSound_IndicatorCategories.xlsx")
+siteFocus = "SB01"
+metaFile = paste0(outDirC,"ONMSSound_IndicatorCategories.xlsx")
 lookup = as.data.frame ( read.xlsx(metaFile, sheetIndex = 1) )
 colnames(lookup) = lookup[1, ]         # Set first row as column names
 lookup = as.data.frame( lookup[-1, ] ) # Remove the first row
@@ -24,14 +26,14 @@ sites = lookup[lookup[,7] == habitat ,] #oceanographic setting
 siteInterest = sites[,5]
 # McKenna et al 2021 paper, nearshore shelf sites
 #siteInterest = c("hi01", "sb01", "gr01","fk02","oc01","mb01","ci01","oc02","mb02") 
-FOI = as.data.frame ( read.xlsx(metaFile, sheetIndex = 3) )
+FOI = as.data.frame ( read.xlsx(metaFile, sheetIndex = "Frequency of Interest") )
 FOI = FOI[!apply(FOI, 1, function(row) all(is.na(row))), ]
 FOI$Sanctuary = tolower(FOI$Sanctuary)
 FOIs = FOI [ FOI$Sanctuary == substr(tolower( siteFocus), 1,2), ]
 
 ## SanctSound FILES - ERDAP ####
 # NOTE - might need to change these in some of the files 31_5 to 31.5 and UTC with : not _
-inFiles = list.files(path = dataDir, pattern = "TOL_1h", full.names = T, recursive = T)
+inFiles = list.files(path = dirSS, pattern = "TOL_1h", full.names = T, recursive = T)
 filesTOL = inFiles[grepl("TOL_1h", inFiles)] 
 inFiles = filesTOL[!grepl("/analysis/", filesTOL)] 
 inFiles = inFiles[!grepl("1h.nc", inFiles)] 
@@ -46,7 +48,7 @@ for (ii in 1:length(inFiles)) { # ii = 1
   site = sapply( strsplit(basename(tmpFile), "[_]"), "[[",2)
   tmp = loadSoundscapeData( inFiles[ii], extension = typ)
   tmp$site = site
-  tmp$yr = year(tmp$UTC)
+  tmp$yr = year(tmp$UTC) # unique( tmp$yr )
   tmp = tmp[tmp$yr == yoi, ]
   
   if (ii > 1) {
@@ -57,7 +59,10 @@ for (ii in 1:length(inFiles)) { # ii = 1
   }
 
   if(nrow(tmpc)>0 ) {
-    cat( inFiles[ii], "Start = ", as.character( as.Date( min(tmpc$UTC) ) ),"\n")
+    cat( ii, inFiles[ii], "Start = ", as.character( as.Date( min(tmpc$UTC) ) ),"\n")
+    sData = rbind(sData, tmpc)
+  } else {
+    cat( ii, inFiles[ii], "Not data in ", yoi, "\n")
     sData = rbind(sData, tmpc)
   }
   
@@ -99,7 +104,7 @@ start_points = mallData %>%
   slice_min(order_by = Frequency, n = 1)
 start_points = start_points[start_points$Quantile == "50%", ]
 
-ggplot() +
+p1 = ggplot() +
   #median TOL values
   geom_line(data = mallData[mallData$Quantile == "50%",], aes(x = Frequency, y = SoundLevel, color = Site), linewidth = 1) +
   geom_line(data = mallDataS[mallDataS$Quantile == "50%",], aes(x = Frequency, y = SoundLevel), color = "black", linewidth = 3) +
@@ -121,6 +126,9 @@ ggplot() +
   ) +
 geom_text(data = start_points, aes(x = Frequency, y = SoundLevel, label = Site), 
           vjust = 0, hjust = 1, size = 3, color = "black")
+
+p1
+ggsave(filename = paste0(outDirG, "plot_", tolower(siteFocus), "_Compare.jpg"), plot = p1, width = 8, height = 6, dpi = 300)
 
 #month with max samples for each site
 category_counts <- sData %>% count(mth, site)

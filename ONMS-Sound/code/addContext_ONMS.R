@@ -72,7 +72,7 @@ TOL_convert$Nominal = paste0("TOL_",TOL_convert$Center)
 # LOAD SPL-TOL DATA ####
 # HOURLY TOLs with wind estimate (gps)
 inFile = list.files(outDirP, pattern = paste0("data_",site,"_HourlySPL-gfs_"), full.names = T)
-file_info = file.info(inFile)
+file_info = file.info(inFile) 
 load( inFile[which.max(file_info$ctime)] ) #only load the most recent!
 st = as.Date( min(gps$UTC) )
 ed = as.Date( max(gps$UTC) )
@@ -112,8 +112,7 @@ p1 = ggplot(summary, aes(x = month, y = n, fill = as.factor(year))) +
   )
 
 p1
-
-ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_Effort.jpg"), plot = p1, width = 8, height = 6, dpi = 300)
+ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_Effort.jpg"), plot = p1, width = 10, height = 6, dpi = 300)
 
 ## add wind category ####
 hist( gps$windMag )
@@ -182,7 +181,7 @@ l = ggplot(gps, aes(x = "", fill = wind_category)) +
     legend.text = element_text(size = 10)  # Optional: adjust legend text size
   ) +
   #scale_x_discrete(labels = category_counts$wind_category) +  # Place the category labels under the plot
-  scale_fill_manual(values = c("low" = "lightgray",  "med" = "darkgray", "high" = "black") )
+  scale_fill_manual(values = c("low" = "lightgray",  "med" = "gray", "high" = "darkgray") )
 
 ### quantiles ####
 tol_columns = grep("TOL", colnames(gps))
@@ -224,13 +223,29 @@ fqupper = max(as.numeric( as.character( mallData$Frequency) ))
 
 ### plot ####
 p = ggplot() +
+  
+  # Add shaded area for 25%-75% range
+  geom_ribbon(data = mallData %>% 
+                pivot_wider(names_from = Quantile, values_from = SoundLevel),
+              aes(x = Frequency, ymin = `25%`, ymax = `75%`, fill = Season),
+              alpha = 0.1) +  # Use alpha for transparency
+  
+  # Median (50%) TOL values
+  geom_line(data = mallData[mallData$Quantile == "50%",], 
+            aes(x = Frequency, y = SoundLevel, color = Season), linewidth = 2) +
+  
+  # Set color and fill to match seasons
+  scale_color_manual(values = c("Winter" = "#56B4E9", "Spring" = "#009E73", 
+                                "Summer" = "#CC79A7", "Fall" = "#E69F00")) +
+  scale_fill_manual(values = c("Winter" = "#56B4E9", "Spring" = "#009E73", 
+                               "Summer" = "#CC79A7", "Fall" = "#E69F00")) + 
   #median TOL values
-  geom_line(data = mallData[mallData$Quantile == "50%",], aes(x = Frequency, y = SoundLevel, color = Season), linewidth = 2) +
-  scale_color_manual(values = c("Winter" = "#56B4E9", "Spring" = "#009E73", "Summer" = "#CC79A7", "Fall" = "#E69F00")) +
+  #geom_line(data = mallData[mallData$Quantile == "50%",], aes(x = Frequency, y = SoundLevel, color = Season), linewidth = 2) +
+  #scale_color_manual(values = c("Winter" = "#56B4E9", "Spring" = "#009E73", "Summer" = "#CC79A7", "Fall" = "#E69F00")) +
   #shade for 25/75 TOL values... coming soon
   #add wind model values
-  geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == windUpp,], aes(x = variable, y = value), color = "gray",  linewidth = 1) +
-  geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == windLow,], aes(x = variable, y = value), color = "gray",  linewidth = 1) +
+  geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == windUpp,], aes(x = variable, y = value), color = "black",  linewidth = 1) +
+  geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == windLow,], aes(x = variable, y = value), color = "black",  linewidth = 1) +
   scale_x_log10(labels = label_number(),limits = (c(10,fqupper))) +  # Log scale for x-axis
 
   # Add vertical lines at FQstart
@@ -245,15 +260,16 @@ p = ggplot() +
   theme(legend.position = "top",
         plot.title = element_text(size = 16, face = "bold", hjust = 0)) +  # This line removes the legend
   labs(
-    title = paste0("Summary of Seasonal Ocean Sound at ", site ),
-    subtitle = paste0(FOIs$Oceanographic.setting[1], " Monitoring Site: ", st, " to ", ed),
-    caption = paste0("gray lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
+    title = paste0("Summary of Seasonal Ocean Sound at ", toupper(site), ", a ", 
+                   tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
+    subtitle = paste0( "data summarized from ", st, " to ", ed),
+    caption = paste0("black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
     x = "Frequency Hz",
     y = expression(paste("Sound Levels (dB re 1 ", mu, " Pa/Hz)" ) )
   )
 
-arranged_plot = grid.arrange(p,l,heights = c(4, .7))
-ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_SeasonalSPL.jpg"), plot = arranged_plot, width = 8, height = 10, dpi = 300)
+arranged_plot = grid.arrange(p,l,heights = c(4, .8))
+ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_SeasonalSPL.jpg"), plot = arranged_plot, width = 10, height = 10, dpi = 300)
 #names(gps)
 
 ## SPECTRA - yearly quantiles ####
@@ -290,15 +306,22 @@ colnames(mallData) = c("Quantile", "Year", "Frequency" , "SoundLevel" )
 max(gps$windMag, na.rm = T)
 fqupper = max(as.numeric( as.character( mallData$Frequency) ))
 p = ggplot() +
+  
+  geom_ribbon(data = mallData %>% 
+                pivot_wider(names_from = Quantile, values_from = SoundLevel),
+              aes(x = Frequency, ymin = `25%`, ymax = `75%`, fill = Year),
+              alpha = 0.1) +  # Use alpha for transparency
+  
   #median TOL values
   geom_line(data = mallData[mallData$Quantile == "50%",], aes(x = Frequency, y = SoundLevel, color = Year), linewidth = 2) +
   #scale_color_manual(values = c("Winter" = "#56B4E9", "Spring" = "#009E73", "Summer" = "#CC79A7", "Fall" = "#E69F00")) +
   #shade for 25/75 TOL values... coming soon
   #add wind model values
-  geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == windUpp,], aes(x = variable, y = value), color = "gray", linewidth = 1) +
-  geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == windLow,], aes(x = variable, y = value), color = "gray", linewidth = 1) +
+  geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == windUpp,], aes(x = variable, y = value), color = "black", linewidth = 1) +
+  geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == windLow,], aes(x = variable, y = value), color = "black", linewidth = 1) +
   scale_x_log10(labels = label_number(),limits = (c(10,fqupper))) +  # Log scale for x-axis
   scale_color_manual(values = rev(colorRampPalette(c("darkblue", "lightblue"))(length(unique(summary$year))))) +
+  scale_fill_manual(values =  rev(colorRampPalette(c("darkblue", "lightblue"))(length(unique(summary$year))))) +
   # Add vertical lines at FQstart
   geom_vline(data = FOIs, aes(xintercept = FQstart, color = Label), linetype = "dashed", color = "black",linewidth = .5) +
   # Add labels at the bottom of each line
@@ -311,14 +334,15 @@ p = ggplot() +
   theme(legend.position = "top",
         plot.title = element_text(size = 16, face = "bold", hjust = 0)) +  # This line removes the legend
   labs(
-    title = paste0("Summary of Yearly Ocean Sound at ", site ),
-    subtitle = paste0(FOIs$Oceanographic.setting[1], " Monitoring Site: ", st, " to ", ed),
-    caption = paste0("gray lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
+    title =  paste0("Summary of Seasonal Ocean Sound at ", toupper(site), ", a ", 
+                    tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
+    subtitle = paste0( "data summarized from ", st, " to ", ed),
+    caption = paste0("black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
     x = "Frequency Hz",
     y = expression(paste("Sound Levels (dB re 1 ", mu, " Pa/Hz)" ) )
   )
 p
-ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_YearSPL.jpg"), plot = p, width = 8, height = 6, dpi = 300)
+ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_YearSPL.jpg"), plot = p, width = 10, height = 6, dpi = 300)
 
 ## CONVERT ALL DATA TO 1 Hz  ####
 gpsBB = gps
@@ -401,7 +425,7 @@ for ( ii in 1:length(yrs ) ) {
     color = "Year"  # Label for the color legend
   ) 
 p
-ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_125Hz.jpg"), plot = p, width = 8, height = 10, dpi = 300)
+ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_125Hz.jpg"), plot = p, width = 10, height = 10, dpi = 300)
 
 ## TIME SERIES - exceedence 100 Hz  ####
 cols_to_select = c("UTC", "windMag","wind_category",fqIn2)
@@ -480,7 +504,7 @@ pE = ggplot(dailyFQ_complete, aes(x = Julian, y = Exceed_50, group = yr, color =
     color = "Year"  # Label for the color legend
   ) 
 pE
-ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_Exceed100.jpg"), plot = p, width = 8, height = 10, dpi = 300)
+ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_Exceed100.jpg"), plot = pE, width = 10, height = 10, dpi = 300)
 
 # ggplotly(pE)
 
@@ -590,26 +614,33 @@ dBIncrease$dBval[1] = mallData$SoundLevel[mallData$Frequency == 63 & mallData$Qu
 dBIncrease$dBval[2] = mallData$SoundLevel[mallData$Frequency == 125 & mallData$Quantile == "50%" & mallData$AIS == "0-none"]
 
 pais = ggplot() +
+  # Add shaded area for 25%-75% range
+  geom_ribbon(data = mallData %>% 
+                pivot_wider(names_from = Quantile, values_from = SoundLevel),
+              aes(x = Frequency, ymin = `25%`, ymax = `75%`, fill = AIS),
+              alpha = 0.1) +  # Use alpha for transparency
+  
   #median TOL values
   geom_line(data = mallData[mallData$Quantile == "50%",], 
             aes(x = Frequency, y = SoundLevel, color = AIS), linewidth = 1) +
+  
   scale_color_manual(values = c("0-none" = "#56B4E9", 
                                 "1-low" = "#009E73", 
                                 "3-high" = "#CC79A7", 
                                 "2-med" = "#E69F00")) +
+  scale_fill_manual(values = c("0-none" = "#56B4E9", "1-low" = "#009E73", 
+                               "3-high" = "#CC79A7", "2-med" = "#E69F00")) + 
+  
   geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == "22.6",], 
-            aes(x = variable, y = value), color = "gray",  linewidth = 1) +
+            aes(x = variable, y = value), color = "black",  linewidth = 1) +
   geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == "1",], 
-            aes(x = variable, y = value), color = "gray",  linewidth = 1) +
+            aes(x = variable, y = value), color = "black",  linewidth = 1) +
   geom_vline(aes(xintercept = 125, color = Label), linetype = "dashed", color = "black",linewidth = .5) +
   
   geom_vline(aes(xintercept = 63, color = Label), linetype = "dashed", color = "black",linewidth = .5) +
   
-  geom_text(aes(x = 63, y = dBIncrease$dBval[1], label = paste0(dBIncrease$dB[1], "dB increase")), angle = 0, vjust = -4, hjust = 0, size = 3) +
-  geom_text(aes(x = 125, y = dBIncrease$dBval[2], label = paste0(dBIncrease$dB[2], "dB increase")), angle = 0, vjust = -4, hjust = 0, size = 3) +
-  
-  
-  
+  geom_text(aes(x = 63,  y = dBIncrease$dBval[1]+5, label = "63 Hz"), angle = 0, vjust = 0, hjust = 0, size = 3) +
+  geom_text(aes(x = 125, y = dBIncrease$dBval[1]+5, label = "125 Hz"), angle = 0, vjust = 0, hjust = 0, size = 3) +
   scale_x_log10(labels = label_number()) +  # Log scale for x-axis
    
   # Additional aesthetics
@@ -617,15 +648,18 @@ pais = ggplot() +
   theme(legend.position = "top",
         plot.title = element_text(size = 16, face = "bold", hjust = 0)) + 
   labs(
-    title = paste0("Summary of Vessel Noise at ", site ),
-    subtitle = paste0(FOIs$Oceanographic.setting[1], " Monitoring Site: ", st, " to ", ed),
-    caption = paste0("gray lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
+    title = paste0("Summary of Seasonal Ocean Sound at ", toupper(site), ", a ", 
+                   tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
+    subtitle = paste0( "data summarized from ", st, " to ", ed, "\n",
+                       dBIncrease$dB[1], "dB increase from no AIS at 63 Hz \n",
+                              dBIncrease$dB[2], "dB increase from no AIS at 125 Hz"  ),
+    caption = paste0("black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
     x = "Frequency Hz",
     y = expression(paste("Sound Levels (dB re 1 ", mu, " Pa/Hz)" ) )
   )
-arranged_plot = grid.arrange(pais,lais,heights = c(4, .7))
+arranged_plot = grid.arrange(pais,lais,heights = c(4, .9))
 
-ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_AISNoise.jpg"), plot = arranged_plot, width = 8, height = 10, dpi = 300)
+ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_AISNoise.jpg"), plot = arranged_plot, width = 10, height = 10, dpi = 300)
 
 
 
