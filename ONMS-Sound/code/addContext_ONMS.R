@@ -18,8 +18,8 @@ library(reshape)
 #INPUT PARAMS ####
 DC = Sys.Date()
 project = "ONMS"
-site = "sb01" # nrs11 mb02"
-site1 =  "sb01" #cbnrs11 is weird...
+site = "sb03" # nrs11 mb02"
+site1 =  "sb03" #cbnrs11 is weird...
 fqIn = "TOL_125" 
 ab = 70 # threshold for above frequency in
 fqIn2 = "TOL_100" # no wind model for 125 Hz- ugh!!!
@@ -68,6 +68,17 @@ if ( is.na(sidx) ) {
 # TOL conversion
 TOL_convert = read.csv(paste0(outDirC,"TOLconvert.csv"))
 TOL_convert$Nominal = paste0("TOL_",TOL_convert$Center)
+## times of interest ####
+TOI = as.data.frame ( read.xlsx(metaFile, sheetIndex = "Time period of interest") )
+TOI = TOI[!apply(TOI, 1, function(row) all(is.na(row))), ]
+TOIs = TOI [ TOI$Site == (site1), ]
+TOIs <- TOIs %>%
+  mutate(
+    Start_Julian = as.numeric(format(as.Date(start_date), "%j")),
+    End_Julian = as.numeric(format(as.Date(end_date), "%j")),
+    Mid_Julian = (Start_Julian + End_Julian) / 2  # Midpoint for annotation
+  )
+TOIs$yr = TOIs$Year
 
 # LOAD SPL-TOL DATA ####
 # HOURLY TOLs with wind estimate (gps)
@@ -401,17 +412,31 @@ for ( ii in 1:length(yrs ) ) {
  idx2 =  which(percentage_above$year == yrs[ii])
  dailyFQ_complete$facet_title[idx] = paste0(yrs[ii], "- ", round(percentage_above$percentage_above[idx2]),"% above" )
 }
+
+TOIs = TOIs %>% filter(yr %in% unique(dailyFQ_complete$yr))
+for (ii in 1:nrow(TOIs) ) {
+  TOIs$facet_title[ii] = dailyFQ_complete$facet_title[which(dailyFQ_complete$yr == TOIs$Year[ii])] [1]
+}
+
+
 ### plot ####
- p = ggplot(dailyFQ_complete, aes(x = Julian, y = TOL100_50, group = yr, color = factor(yr))) +
-  geom_line(size = 1, na.rm = T) +
-  #geom_point(size = 2) +
+p = ggplot(dailyFQ_complete, aes(x = Julian, y = TOL100_50, group = yr, color = factor(yr))) +
+  
+  # Shaded area first (so it's in the background)
+  geom_rect(data = TOIs %>% filter(yr %in% unique(dailyFQ_complete$yr)), 
+            inherit.aes = FALSE,
+            aes(xmin = Start_Julian, xmax = End_Julian, ymin = -Inf, ymax = Inf), 
+            alpha = 0.2) +
+  
+  
+  # Main data layers (drawn above the shaded area)
+  geom_line(size = 1, na.rm = TRUE) +
   geom_ribbon(aes(ymin = TOL100_25, ymax = TOL100_75), fill = "gray", alpha = 0.5) +
-  #geom_col(aes(y = windspeed) , color = "gray", alpha = 1) +
-  facet_wrap(~facet_title, nrow = length(unique(dailyFQ$yr)) ) +
-  theme_minimal()+
-  scale_x_continuous( breaks = days_of_year_for_months, label = month_names_seq) +  # Show every 30 days
-  geom_hline(aes(yintercept = ab), linetype = "dashed", color = "gray", size = .7) +
-  #geom_hline(aes(yintercept = 10), linetype = "dashed", color = "gray",size = .5) +
+  facet_wrap(~facet_title, nrow = length(unique(dailyFQ_complete$yr))) +
+  theme_minimal() +
+  scale_x_continuous(breaks = days_of_year_for_months, labels = month_names_seq) +  
+  geom_hline(aes(yintercept = ab), linetype = "dashed", color = "gray", size = 0.7) +
+  
   theme(
     legend.position = "none",
         strip.text = element_text(size = 10, hjust =0, vjust = 0),  # Facet labels inside (centered)
@@ -420,12 +445,15 @@ for ( ii in 1:length(yrs ) ) {
   labs(
     title = paste0("Estimated Ship Noise - 125 Hz") ,
     subtitle =  paste0(FOI$Oceanographic.setting[1], " Monitoring Site at ", tolower(site)) ,
+    caption = paste0 ("Shaded area represents ", TOIs$Label[1]),
     x = "",
     y = expression(paste("Sound Levels (125 Hz dB re 1", mu, " Pa/Hz)" ) ),
     color = "Year"  # Label for the color legend
   ) 
 p
+
 ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_125Hz.jpg"), plot = p, width = 10, height = 10, dpi = 300)
+
 
 ## TIME SERIES - exceedence 100 Hz  ####
 cols_to_select = c("UTC", "windMag","wind_category",fqIn2)
@@ -480,8 +508,19 @@ for ( ii in 1:length(yrs ) ) {
   dailyFQ_complete$facet_title[idx] = paste0(yrs[ii], "- ", round(percentage_above$percentage_above[idx2]),"% above" )
 }
 ### plot ####
+TOIs = TOIs %>% filter(yr %in% unique(dailyFQ_complete$yr))
+for (ii in 1:nrow(TOIs) ) {
+  TOIs$facet_title[ii] = dailyFQ_complete$facet_title[which(dailyFQ_complete$yr == TOIs$Year[ii])] [1]
+}
+
 pE = ggplot(dailyFQ_complete, aes(x = Julian, y = Exceed_50, group = yr, color = factor(yr))) +
-  geom_line(size = 1, na.rm = T) +
+ 
+  geom_rect(data = TOIs %>% filter(yr %in% unique(dailyFQ_complete$yr)), 
+            inherit.aes = FALSE,
+            aes(xmin = Start_Julian, xmax = End_Julian, ymin = -Inf, ymax = Inf), 
+            alpha = 0.2) +
+  
+   geom_line(size = 1, na.rm = T) +
   #geom_point(size = 2) +
   geom_ribbon(aes(ymin = Exceed_25, ymax = Exceed_75), fill = "gray", alpha = 0.5) +
   #geom_col(aes(y = windspeed) , color = "gray", alpha = 1) +
@@ -498,12 +537,14 @@ pE = ggplot(dailyFQ_complete, aes(x = Julian, y = Exceed_50, group = yr, color =
   labs(
     title = paste0("Noise exceedence at 100 Hz") ,
     subtitle =  paste0(FOI$Oceanographic.setting[1], " Monitoring Site at ", tolower(site)) ,
-    caption = paste0("Exceedance based on estimate of sound level from modeled wind speed (threshold = ", ab2,")"),
+    caption = paste0("Exceedance based on estimate of sound level from modeled wind speed (threshold = ", ab2,") \n",
+                     "Shaded area represents ", TOIs$Label[1]),
     x = "",
     y = expression(paste("Sound Levels (125 Hz dB re 1", mu, " Pa/Hz)" ) ),
     color = "Year"  # Label for the color legend
   ) 
 pE
+
 ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_Exceed100.jpg"), plot = pE, width = 10, height = 10, dpi = 300)
 
 # ggplotly(pE)
@@ -659,7 +700,7 @@ pais = ggplot() +
   )
 arranged_plot = grid.arrange(pais,lais,heights = c(4, .9))
 
-ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_AISNoise.jpg"), plot = arranged_plot, width = 10, height = 10, dpi = 300)
+  ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_AISNoise.jpg"), plot = arranged_plot, width = 10, height = 10, dpi = 300)
 
 
 

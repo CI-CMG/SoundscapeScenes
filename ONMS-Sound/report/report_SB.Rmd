@@ -8,7 +8,7 @@ output:
 params:
   author: "Stellwagen Bank National Marine Sanctuary"
   abrv: "SBNMS"
-  sitetype: "offshore"
+  sitetype: "nearshore"
 editor_options: 
   markdown: 
     wrap: 72
@@ -48,11 +48,11 @@ Ocean sound refers to the collection of acoustic energy present in marine enviro
 
 NOAA's Office of National Marine Sanctuaries (ONMS) maintains a nationally coordinated underwater sound monitoring network across the National Marine Sanctuary System, known as [ONMS Sound](https://sanctuaries.noaa.gov/science/monitoring/sound/). ONMS sound works with partners to monitor off the US East Coast, in the Gulf of Mexico, off the West Coast and in the Pacific Islands region. Ocean Sound monitoring sites are located in strategic locations within sanctuary boundaries and records continuously. Audio recordings and standardized sound measurements are available through the NOAA National Centers for Environmental Information's Passive Acoustic Archive. Explore the acoustic monitoring sites [here](https://www.ncei.noaa.gov/maps/passive-acoustic-data/).
 
-The **`r params$author`** is one of the largest marine protected areas in the United States, spanning over 6,094 square miles along the central California coast. It is home to a rich diversity of marine life, including whales, sea otters, seabirds, and vast kelp forests. MBNMS supports these ecosystems, promotes marine research, and offers many ocean-based recreational opportunities like diving, fishing, and whale watching.
+The [**`r params$author`**](https://stellwagen.noaa.gov/) is a wild ocean place near an urban world, sits east of Boston, Massachusetts between Cape Ann and Cape Cod. Historically important as a fishing ground, New England's only national marine sanctuary now reigns as a premier whale watching destination and continues to support commercial and recreational fishing.
 
-**Ocean sound monitoring** coordinated by ONMS began in 2019, however, a long history of underwater acoustic monitoring has occurred in this sanctuary [[1](https://pubs.aip.org/asa/arlo/article/3/2/65/123823/Ocean-ambient-sound-Comparing-the-1960s-with-the)]. Further, the Monterey Bay Aquarium Research Institute supports a continuous real-time monitoring effort within the sanctuary that began in 2015, known as the [Soundscape Listening Room](https://www.mbari.org/project/soundscape-listening-room/). Collectively, these underwater sound monitoring efforts have provided key insight on [cryptic species](https://movementecologyjournal.biomedcentral.com/articles/10.1186/s40462-024-00500-x) , [whale migration patterns and drivers](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/1365-2435.14013), [methods for detecting fish sounds](https://pubs.aip.org/asa/jasa/article/153/3/1710/2881267) , and the [steady rise in ocean noise levels](https://pubs.aip.org/asa/arlo/article/3/2/65/123823/Ocean-ambient-sound-Comparing-the-1960s-with-the), to highlight a few.
+**Ocean sound monitoring** within **`r params$abrv`** has a long history of underwater acoustic monitoring with a focus on monitoring of [marine mammal](https://www.frontiersin.org/journals/remote-sensing/articles/10.3389/frsen.2022.970401/full), including the endangered North Atlantic Right Whale presence. As well as [noise reduction](https://link.springer.com/article/10.1007/s10661-024-12497-2) during [vessel speed reduction programs](https://www.fisheries.noaa.gov/national/endangered-species-conservation/reducing-vessel-strikes-north-atlantic-right-whales#current-vessel-speed-restrictions).
 
-**Current ocean sound monitoring and analysis** is maintained at four sites within MBNMS. Two sites (MB01, MB02) are located more inshore, capturing more local vessel activity and sounds from nearshore species. The two offshore sites (MB03, MBARI_MARS) capture patterns in migrating whales and transiting commercial vessel traffic.
+**Current ocean sound monitoring and analysis** is maintained at four sites within **`r params$abrv`**. Two sites (SB01, SB02,SB03) are located more inshore, capturing more local vessel activity and sounds from nearshore species. The one offshore sites (NRS09) capture patterns in migrating whales and transiting commercial vessel traffic and is part of the [US Ocean Noise Reference Station Network](https://www.pmel.noaa.gov/acoustics/noaanps-ocean-noise-reference-station-network).
 
 **Summary of ocean sound monitoring sites**
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, out.width="25%", out.height="25%"}
