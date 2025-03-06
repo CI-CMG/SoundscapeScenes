@@ -14,6 +14,8 @@ library(ggplot2)
 library(tidyverse)
 library(xlsx)
 library(reshape)
+library(gtable)
+library(grid)
 
 #INPUT PARAMS ####
 DC = Sys.Date()
@@ -177,10 +179,10 @@ gps$wind_category <- factor(gps$wind_category, levels = c("low", "med", "high"))
 l = ggplot(gps, aes(x = "", fill = wind_category)) +
   geom_bar(stat = "count", position = position_stack(reverse = TRUE)) +  # Stacked bar chart
   coord_flip() +  # Flip the coordinates to make it horizontal
-  ggtitle("Distribution of Wind Speed Conditions during this time period") +  # Add the main title
+  ggtitle("% time the soundscape is in different wind speed categories ") +  # Add the main title
   theme_minimal() +
   labs(x = NULL, y = NULL,
-       subtitle = paste0("low < ",windL, ", med ", windL,"-",windH, ", high > ",windH)) +  # Remove x-axis label
+       subtitle = paste0("(low < ",windL, ", med ", windL,"-",windH, ", high > ",windH, " m/s)")) +  # Remove x-axis label
   theme(
     plot.title = element_text(hjust = 0),  # Align the title to the left
     axis.text.y = element_blank(),
@@ -271,17 +273,18 @@ p = ggplot() +
   theme(legend.position = "top",
         plot.title = element_text(size = 16, face = "bold", hjust = 0)) +  # This line removes the legend
   labs(
-    title = paste0("Summary of Seasonal Ocean Sound at ", toupper(site), ", a ", 
+    title = paste0("Sounscape Contributions at ", toupper(site), ", a ", 
                    tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
-    subtitle = paste0( "data summarized from ", st, " to ", ed),
-    caption = paste0("black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
+    subtitle = paste0( "data summarized from ", st, " to ", ed, "\n verticle lines indicate frequencies for sounds of interest in this soundscape" ),
+    caption = paste0("black lines are expected wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
     x = "Frequency Hz",
     y = expression(paste("Sound Levels (dB re 1 ", mu, " Pa/Hz)" ) )
   )
 
-arranged_plot = grid.arrange(p,l,heights = c(4, .8))
+separator <- grid.rect(gp = gpar(fill = "black"), height = unit(2, "pt"), width = unit(1, "npc"))
+arranged_plot = grid.arrange(p,separator, l,heights =c(4, 0.05, 0.8))
 ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_SeasonalSPL.jpg"), plot = arranged_plot, width = 10, height = 10, dpi = 300)
-#names(gps)
+
 
 ## SPECTRA - yearly quantiles ####
 tol_columns = grep("TOL", colnames(gps))
@@ -345,9 +348,9 @@ p = ggplot() +
   theme(legend.position = "top",
         plot.title = element_text(size = 16, face = "bold", hjust = 0)) +  # This line removes the legend
   labs(
-    title =  paste0("Summary of Seasonal Ocean Sound at ", toupper(site), ", a ", 
+    title =  paste0("Yealy Soundscape Comparison at ", toupper(site), ", a ", 
                     tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
-    subtitle = paste0( "data summarized from ", st, " to ", ed),
+    subtitle = paste0( "data summarized from ", st, " to ", ed, "\n verticle lines indicate frequencies for sounds of interest in this soundscape" ),
     caption = paste0("black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
     x = "Frequency Hz",
     y = expression(paste("Sound Levels (dB re 1 ", mu, " Pa/Hz)" ) )
@@ -428,6 +431,7 @@ p = ggplot(dailyFQ_complete, aes(x = Julian, y = TOL100_50, group = yr, color = 
             aes(xmin = Start_Julian, xmax = End_Julian, ymin = -Inf, ymax = Inf), 
             alpha = 0.2) +
   
+  scale_color_manual(values = rev(colorRampPalette(c("darkblue", "lightblue"))(length(unique(summary$year))))) +
   
   # Main data layers (drawn above the shaded area)
   geom_line(size = 1, na.rm = TRUE) +
@@ -443,15 +447,14 @@ p = ggplot(dailyFQ_complete, aes(x = Julian, y = TOL100_50, group = yr, color = 
         strip.background = element_blank(),  # Remove background behind facet labels
         panel.spacing = unit(.1, "lines") ) + # Adjust the spacing between facets) +
   labs(
-    title = paste0("Estimated Ship Noise - 125 Hz") ,
-    subtitle =  paste0(FOI$Oceanographic.setting[1], " Monitoring Site at ", tolower(site)) ,
-    caption = paste0 ("Shaded area represents ", TOIs$Label[1]),
+    title = paste0("Contribution of ship noise to the soundscape at 125 Hz" ) ,
+    subtitle =  paste0(toupper(site), ", a ", tolower(FOI$Oceanographic.setting[1]), " monitoring site \nshaded areas represents ", TOIs$Label[1] ),
+    caption = '',
     x = "",
     y = expression(paste("Sound Levels (125 Hz dB re 1", mu, " Pa/Hz)" ) ),
     color = "Year"  # Label for the color legend
   ) 
 p
-
 ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_125Hz.jpg"), plot = p, width = 10, height = 10, dpi = 300)
 
 
@@ -467,7 +470,7 @@ wsIdx <- match(gpsFQ$closest_windMag, windInfo$windSpeed)
 gpsFQ$WindModel100 <- windInfo[wsIdx, fqIdx]
 names(gpsFQ)
 gpsFQ$Exceed = gpsFQ$TOL_100 -  gpsFQ$WindModel100 #actual - model
-hist(gpsFQ$Exceed)
+#hist(gpsFQ$Exceed)
 
 dailyFQ = gpsFQ %>%
   mutate(Date = as.Date(UTC)) %>%
@@ -527,6 +530,8 @@ pE = ggplot(dailyFQ_complete, aes(x = Julian, y = Exceed_50, group = yr, color =
   facet_wrap(~facet_title, nrow = length(unique(dailyFQ$yr)) ) +
   theme_minimal()+
   scale_x_continuous( breaks = days_of_year_for_months, label = month_names_seq) +  # Show every 30 days
+  scale_color_manual(values = rev(colorRampPalette(c("darkblue", "lightblue"))(length(unique(summary$year))))) +
+  
   geom_hline(aes(yintercept = ab2), linetype = "dashed", color = "gray", size = .7) +
   #geom_hline(aes(yintercept = 10), linetype = "dashed", color = "gray",size = .5) +
   theme(
@@ -534,20 +539,82 @@ pE = ggplot(dailyFQ_complete, aes(x = Julian, y = Exceed_50, group = yr, color =
     strip.text = element_text(size = 10, hjust =0, vjust = 0),  # Facet labels inside (centered)
     strip.background = element_blank(),  # Remove background behind facet labels
     panel.spacing = unit(.1, "lines") ) + # Adjust the spacing between facets) +
+  
   labs(
-    title = paste0("Noise exceedence at 100 Hz") ,
-    subtitle =  paste0(FOI$Oceanographic.setting[1], " Monitoring Site at ", tolower(site)) ,
-    caption = paste0("Exceedance based on estimate of sound level from modeled wind speed (threshold = ", ab2,") \n",
-                     "Shaded area represents ", TOIs$Label[1]),
+    title =paste0("Contribution of ship noise to the soundscape" ),
+    subtitle =  paste0(toupper(site), ", a ", tolower(FOI$Oceanographic.setting[1]), " monitoring site \nshaded areas represents ", TOIs$Label[1] ) ,
+    caption = paste0("exceedance calculated as the difference in measured sound level from modeled sound levels based on wind speed at 100 Hz
+                     threshold for % above = ", ab2, "dB"),
     x = "",
-    y = expression(paste("Sound Levels (125 Hz dB re 1", mu, " Pa/Hz)" ) ),
+    y = expression(paste("Noise Exceedance (decibels)" ) ),
     color = "Year"  # Label for the color legend
   ) 
 pE
-
 ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_Exceed100.jpg"), plot = pE, width = 10, height = 10, dpi = 300)
 
-# ggplotly(pE)
+### create output table ####
+### calculate % above VSR ####
+# add VSR to hourly data
+gpsFQ$VSR = "no"
+for (tt in 1:nrow( TOIs )){
+  idx = which(gpsFQ$UTC >= TOIs$start_date[tt] & gpsFQ$UTC < TOIs$end_date[tt]+1)
+  cat(year( TOIs$start_date[tt]) , ": ", as.character( gpsFQ$UTC[idx[1]]), "\n")
+  gpsFQ$VSR[idx] = "yes"
+  rm(idx)
+}
+names(gpsFQ)
+# percent above wind noise threshold, summarized by year for all three categories (above, below, NA)
+percentage_above <- gpsFQ %>%
+  mutate(year = year(Date), 
+         mth = month(Date, label = TRUE)) %>%  # Extract month name
+  group_by(year, mth, VSR) %>%
+  summarise(
+    total_count = n(),
+    count_above = sum(Exceed >= ab2, na.rm = TRUE),
+    count_below = sum(Exceed < ab2, na.rm = TRUE),
+    count_na = sum(is.na(Exceed)),  # Count NAs
+    .groups = "drop"
+  ) %>%
+  mutate(
+    percentage_above = (count_above / total_count) * 100,
+    percentage_below = (count_below / total_count) * 100,
+    percentage_na = (count_na / total_count) * 100
+  ) %>%
+  select(year, mth, VSR, percentage_above, percentage_below, percentage_na) %>%
+  pivot_longer(cols = c(percentage_above, percentage_below, percentage_na),
+               names_to = "Threshold_Category",
+               values_to = "Percentage")
+#output table Year- reformat
+percentage_aboveT = percentage_above[percentage_above$Threshold_Category == "percentage_above",]
+percentage_aboveT$Percentage = round( percentage_aboveT$Percentage )
+df_wide <- percentage_aboveT %>%
+  pivot_wider(
+    names_from = year,  # The column containing year
+    values_from = Percentage,  # The column containing values (percentage)
+    #names_prefix = "Year_"  # Optional prefix for year columns
+  )
+df_wide <- df_wide %>%
+  select(-Threshold_Category)
+
+title_grob <- textGrob( paste0("Percent Time Above Wind Noise Threshold (", ab2, "dB)"), gp = gpar(fontsize = 16, fontface = "bold"))
+table_grob <- tableGrob(df_wide)
+combined_grob <- arrangeGrob(title_grob, table_grob, ncol = 1, heights = c(0.1, 0.9))  # Adjust title height
+ggsave(paste0(outDirG, "table_", site, "_Exceed.jpg"), combined_grob, width = 8, height = 5)
+
+percentage_above$Threshold_Category <- factor(percentage_above$Threshold_Category, 
+                                              levels = c("percentage_below", "percentage_above", "percentage_na"))
+ggplot(percentage_above, aes(x = mth, y = Percentage, fill = Threshold_Category,color = VSR)) +
+  geom_bar(stat = "identity", position = "stack") +  # Stacked to show proportion with correct ordering
+  facet_wrap(~year, nrow = 1) +  # One row per year
+  labs(x = "", y = "Percentage", 
+       title = paste0("Percent Time Above Wind Noise Threshold (", ab2, "dB)")) +
+  scale_fill_manual(values = c("percentage_above" = "tomato",  # 'percentage_above' on bottom
+                               "percentage_below" = "gray",
+                               "percentage_na" = "lightgray")) +  # Custom colors
+  scale_x_discrete(breaks = levels(percentage_above$mth)[seq(1, length(levels(percentage_above$mth)), by = 3)]) +  
+  scale_color_manual(values = c("yes" = "black", "no" = NA)) +  # Outline months with VSR
+  # Show every third month
+  theme_minimal()
 
 ## SPECTRA- AIS vs SPL ####
 # plot spectra when ships present vs not present- ships present in a given hour
