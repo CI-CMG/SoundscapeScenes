@@ -422,7 +422,7 @@ for (ii in 1:nrow(TOIs) ) {
 }
 
 
-### plot ####
+ ### plot ####
 p = ggplot(dailyFQ_complete, aes(x = Julian, y = TOL100_50, group = yr, color = factor(yr))) +
   
   # Shaded area first (so it's in the background)
@@ -458,7 +458,7 @@ p
 ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_125Hz.jpg"), plot = p, width = 10, height = 10, dpi = 300)
 
 
-## TIME SERIES - exceedence 100 Hz  ####
+ ## TIME SERIES - exceedence 100 Hz  ####
 cols_to_select = c("UTC", "windMag","wind_category",fqIn2)
 gpsFQ = gps %>% select(all_of(cols_to_select))
 #ADD wind speed estimate for each hour of data in frequency of interest
@@ -563,10 +563,11 @@ for (tt in 1:nrow( TOIs )){
   rm(idx)
 }
 names(gpsFQ)
+
 # percent above wind noise threshold, summarized by year for all three categories (above, below, NA)
 percentage_above <- gpsFQ %>%
-  mutate(year = year(Date), 
-         mth = month(Date, label = TRUE)) %>%  # Extract month name
+  mutate(year = year(UTC), 
+         mth = month(UTC, label = TRUE)) %>%  # Extract month name
   group_by(year, mth, VSR) %>%
   summarise(
     total_count = n(),
@@ -584,6 +585,7 @@ percentage_above <- gpsFQ %>%
   pivot_longer(cols = c(percentage_above, percentage_below, percentage_na),
                names_to = "Threshold_Category",
                values_to = "Percentage")
+
 #output table Year- reformat
 percentage_aboveT = percentage_above[percentage_above$Threshold_Category == "percentage_above",]
 percentage_aboveT$Percentage = round( percentage_aboveT$Percentage )
@@ -699,7 +701,7 @@ lais = ggplot(gpsAIS, aes(x = "", fill = ais_category)) +
   coord_flip() +  # Flip the coordinates to make it horizontal
   ggtitle("AIS vessels categories") +  # Add the main title
   theme_minimal() +
-  labs(x = NULL, y = NULL, subtitle_text = "low > 3, med 3-5, high >5") +  # Remove x-axis label
+  labs(x = NULL, y = NULL, subtitle_text = "low < 3, med 3-5, high >5") +  # Remove x-axis label
   theme(
     plot.title = element_text(hjust = 0),  # Align the title to the left
     axis.text.y = element_blank(),
@@ -756,19 +758,114 @@ pais = ggplot() +
   theme(legend.position = "top",
         plot.title = element_text(size = 16, face = "bold", hjust = 0)) + 
   labs(
-    title = paste0("Summary of Seasonal Ocean Sound at ", toupper(site), ", a ", 
-                   tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
-    subtitle = paste0( "data summarized from ", st, " to ", ed, "\n",
+    title =paste0("Contribution of ship noise to the soundscape" ),
+    subtitle =  paste0(toupper(site), ", a ", tolower(FOI$Oceanographic.setting[1]), 
+                       " site (data summarized from ", st, " to ", ed, ")\n",
                        dBIncrease$dB[1], "dB increase from no AIS at 63 Hz \n",
-                              dBIncrease$dB[2], "dB increase from no AIS at 125 Hz"  ),
-    caption = paste0("black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
+                       dBIncrease$dB[2], "dB increase from no AIS at 125 Hz" ) ,
+    caption = paste0("black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]\n",
+                     "AIS vessels are those ships transmitting data about position and speed"), 
     x = "Frequency Hz",
     y = expression(paste("Sound Levels (dB re 1 ", mu, " Pa/Hz)" ) )
   )
 arranged_plot = grid.arrange(pais,lais,heights = c(4, .9))
 
-  ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_AISNoise.jpg"), plot = arranged_plot, width = 10, height = 10, dpi = 300)
+ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_AISNoise.jpg"), plot = arranged_plot, width = 10, height = 10, dpi = 300)
 
+### plot ####
+# distributions of 125 
+gpsAIS$ais_category  = ( substr(gpsAIS$ais_category, start = 3, stop = 6) )
+gpsAIS$ais_category2 = factor(gpsAIS$ais_category, 
+                              levels = c("none", "low", "med", "high"), 
+                              ordered = TRUE)
+medians <- gpsAIS %>%
+  group_by(ais_category2) %>%
+  summarise(median_value = median(TOL_125, na.rm = TRUE))
 
+pais2 = ggplot(gpsAIS, aes(x = TOL_125, fill = ais_category2)) +
+  geom_histogram(binwidth = 1, alpha = 0.6, position = "identity") + 
+  geom_vline(data = medians, aes(xintercept = median_value, color = ais_category2), 
+             linetype = "solid", size = 1) +  # Add median lines
+  labs(
+    title =paste0("Contribution of ship noise to the soundscape" ),
+    subtitle =  paste0(toupper(site), ", a ", tolower(FOI$Oceanographic.setting[1]), 
+                       " site (data summarized from ", st, " to ", ed, ")\n" ) ,
+    caption = "low<3 ships, med 3-5 ships, high>5 ships",
+    x = expression(paste("Sound Levels (dB re 1 ", mu, " Pa/Hz)" ) ), 
+    y = "Count of Hours",
+    fill = "Ships transiting nearby",  # Change legend title for fill
+    color = "Ships transiting nearby")  +  # Change legend title for color) +
+  scale_fill_brewer(palette = "Set3") +  
+  scale_color_brewer(palette = "Set3") +  # Match colors for clarity
+  theme_minimal()
+pais2
+ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_AIShist.jpg"), plot = pais2, width = 10, height = 10, dpi = 300)
+
+### plot ####
+# timeseries of 125 
+# each day median level for each category....
+names(gpsAIS)
+gpsAIS$day = as.Date(gpsAIS$UTC)
+gpsAIS$ais = "present"
+gpsAIS$ais[gpsAIS$ais_category2 == "none"] = "none"
+
+medians <- gpsAIS %>%
+  group_by(day, ais) %>%
+  summarise(median_value = median(TOL_125, na.rm = TRUE))
+
+medians_diff <- gpsAIS %>%
+  group_by(day, ais) %>%
+  summarise(median_value = median(TOL_125, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(names_from = ais, values_from = median_value) %>%  # Make columns for "none" & "present"
+  mutate(difference = `present` - `none`)  # Calculate difference
+medians_diff$year = year(medians_diff$day )
+
+pais3 = ggplot(medians_diff, aes(x = day, y = difference, fill = difference > 0)) + 
+  geom_col(show.legend = FALSE) +  # Use geom_col to plot bars with height defined by difference
+  scale_fill_manual(values = c("TRUE" = "tomato", "FALSE" = "steelblue")) +  # Color bars based on positive or negative difference
+  labs(
+    title = "Difference in soundscape when vessel nearby",
+    subtitle =  paste0(toupper(site), ", a ", tolower(FOI$Oceanographic.setting[1]), " monitoring site \nshaded areas represents ", TOIs$Label[1] ),
+    x = "",
+    y = ("Daily difference in decibels at 125 Hz \n (vessel - non-vessel)")
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray") +  
+  geom_vline(data = medians_diff, aes(xintercept = as.Date(paste0(year, "-01-01"))), 
+             color = "black", linetype = "dashed") + # Add dashed line at zero for reference
+  geom_rect(data = TOIs %>% filter(yr %in% unique(dailyFQ_complete$yr)), 
+            inherit.aes = FALSE,
+            aes(xmin = start_date, xmax = end_date , ymin = -Inf, ymax = Inf), 
+            alpha = 0.2) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+pais3
+ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_AISTimeSeries.jpg"), plot = pais3, width = 12, height = 8, dpi = 300)
+###table OF RESULTS ####
+medians_diff$mth = month(medians_diff$day)
+medians_diff$yr = year(medians_diff$day)
+
+medians <- medians_diff %>%
+  group_by(yr, mth) %>%
+  summarise(median_value = round(mean(difference, na.rm = TRUE), 1), .groups = "drop") %>%
+  mutate(mth = factor(month.abb[mth], levels = month.abb))  # Ensure correct order
+
+month_order <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+# Pivot wider first
+medians_wide <- medians %>%
+  pivot_wider(names_from = mth, values_from = median_value)
+
+# Reorder columns to match the correct month order
+medians_wide <- medians_wide %>%
+  select(yr, all_of(intersect(month_order, names(medians_wide))))
+
+medians_wide
+
+title_grob <- textGrob( paste0("Monthly average difference in soundscape when vessel nearby \n (", toupper(site), ")"),
+                        gp = gpar(fontsize = 16, fontface = "bold"))
+table_grob <- tableGrob(as.data.frame( medians_wide) )
+combined_grob <- arrangeGrob(title_grob, table_grob, ncol = 1, heights = c(0.1, 0.9))  # Adjust title height
+ggsave(paste0(outDirG, "table_", site, "_AISabove.jpg"), combined_grob, width = 8, height = 5)
 
 
