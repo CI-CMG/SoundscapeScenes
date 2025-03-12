@@ -348,7 +348,7 @@ p = ggplot() +
   theme(legend.position = "top",
         plot.title = element_text(size = 16, face = "bold", hjust = 0)) +  # This line removes the legend
   labs(
-    title =  paste0("Yealy Soundscape Comparison at ", toupper(site), ", a ", 
+    title =  paste0("Yearly Soundscape Comparison at ", toupper(site), ", a ", 
                     tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
     subtitle = paste0( "data summarized from ", st, " to ", ed, "\n verticle lines indicate frequencies for sounds of interest in this soundscape" ),
     caption = paste0("black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
@@ -782,6 +782,23 @@ medians <- gpsAIS %>%
   group_by(ais_category2) %>%
   summarise(median_value = median(TOL_125, na.rm = TRUE))
 
+# Step 1: Create Pie Chart Data
+pie_data <- gpsAIS %>%
+  group_by(ais_category2) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count))
+
+# Step 2: Create Pie Chart
+pie_chart <- ggplot(pie_data, aes(x = "", y = percentage, fill = ais_category2)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +  
+  scale_fill_brewer(palette = "Set3") +  
+  theme_void() +  # Remove background, axes, and gridlines
+  theme(legend.position = "none") +
+  labs(title = "Proportion of Hours") # Hide legend in pie chart
+
+# Convert pie chart to grob
+pie_grob <- ggplotGrob(pie_chart)
 pais2 = ggplot(gpsAIS, aes(x = TOL_125, fill = ais_category2)) +
   geom_histogram(binwidth = 1, alpha = 0.6, position = "identity") + 
   geom_vline(data = medians, aes(xintercept = median_value, color = ais_category2), 
@@ -797,9 +814,37 @@ pais2 = ggplot(gpsAIS, aes(x = TOL_125, fill = ais_category2)) +
     color = "Ships transiting nearby")  +  # Change legend title for color) +
   scale_fill_brewer(palette = "Set3") +  
   scale_color_brewer(palette = "Set3") +  # Match colors for clarity
-  theme_minimal()
+  theme_minimal() +
+  annotation_custom(pie_grob, xmin = max(gpsAIS$TOL_125) - 20, xmax = max(gpsAIS$TOL_125),
+                  ymin = min(pie_data$count), ymax =min(pie_data$count)+300 )  
+
 pais2
 ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_AIShist.jpg"), plot = pais2, width = 10, height = 10, dpi = 300)
+
+### table results- per month summaries ####
+gpsAIS$mth = month( gpsAIS$UTC )
+gpsAIS$yr = year( gpsAIS$UTC )
+#Group by month and AIS category, calculate count
+pie_table <- gpsAIS %>%
+  group_by(mth, ais_category2) %>%
+  summarise(count = n(), .groups = "drop")  # Get count for each AIS category in each month
+# Calculate percentage of total count per month
+pie_table <- pie_table %>%
+  group_by(mth) %>%
+  mutate(percentage = round(count / sum(count) * 100))  # Percentage relative to total count for each month
+pie_table$percentage = round(pie_table$percentage,1)
+#Pivot to get months as rows, AIS categories as columns
+pie_table_wide <- pie_table %>%
+  select(-count) %>%  # Remove count column
+  pivot_wider(names_from = ais_category2, values_from = (percentage), values_fill = list(percentage = 0))
+
+print(pie_table_wide)
+title_grob <- textGrob( paste0("Proportion of hours in each AIS category \n (", toupper(site), ")"),
+                        gp = gpar(fontsize = 16, fontface = "bold"))
+table_grob <- tableGrob(as.data.frame( pie_table_wide) )
+combined_grob <- arrangeGrob(title_grob, table_grob, ncol = 1, heights = c(0.1, 0.9))  # Adjust title height
+ggsave(paste0(outDirG, "table_", site, "_AIShist.jpg"), combined_grob, width = 8, height = 5)
+
 
 ### plot ####
 # timeseries of 125 

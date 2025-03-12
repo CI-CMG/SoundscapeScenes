@@ -96,7 +96,7 @@ during [vessel speed reduction
 programs](https://www.fisheries.noaa.gov/national/endangered-species-conservation/reducing-vessel-strikes-north-atlantic-right-whales#current-vessel-speed-restrictions).
 
 **Current ocean sound monitoring and analysis** is maintained at four
-sites within **`r params$abrv`**. Two sites (SB01, SB02,SB03) are
+sites within **`r params$abrv`**. Two sites (SB01, SB02, SB03) are
 located more inshore, capturing more local vessel activity and sounds
 from nearshore species. The one offshore sites (NRS09) capture patterns
 in migrating whales and transiting commercial vessel traffic and is part
@@ -213,7 +213,7 @@ are underway on global to local scales though [vessel speed reduction
 strategies and engineering
 solutions](https://pubs.aip.org/asa/jasa/article/156/5/3534/3321836).
 Measuring annual trends in ocean noise provide insights on trends in
-ocean noise: Are levels lower in the most recent year of monitoring?
+ocean noise: **Are levels lower in the most recent year of monitoring?**
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("**Annual difference in Ocean Sound**" ) }
 knitr::include_graphics(("plot_sb01_YearSPL.jpg"))
@@ -241,11 +241,10 @@ knitr::include_graphics(("plot_sb03_Exceed100.jpg"))
 
 ::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
 # **How much noise do nearby ships contribute to the soundscape?**
-vessels are transiting nearby. Vessels are considered nearby if
-transiting within 10 km of the monitoring location. When vessels are
-nearby sound levels increase. Vessel presence is tracked using Automatic 
-Identification System (AIS) data that most vessel are required to transmit
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("**Noise Exceedance**" ) }
+Ships are considered nearby if transiting within 10 km of the monitoring location. When ships are
+transiting nearby sound levels increase because of noise produced by the ship. Ship presence is tracked using Automatic 
+Identification System (AIS) data which most vessels are required to transmit
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("**ADD CAPTION**" ) }
 knitr::include_graphics(("plot_sb01_AISTimeSeries.jpg"))
 knitr::include_graphics(("plot_sb03_AISTimeSeries.jpg"))
 ```
@@ -255,8 +254,8 @@ Table of results
 
 <dialog id="infoModal3">
 
-<p> Difference in soundscape when ships nearby. Calculated as monthly average from daily differences in 125 Hz sound levels when vessel nearby verse no vessel nearby </p>
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("ADD CAPTION" )}
+<p> Summary of sound level increase when ships nearby. Calculated as monthly average from daily differences in 125 Hz sound levels when AIS ships nearby verse no ships nearby.</p>
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("**ADD CAPTION**" )}
 # Load and display an image with a caption
 knitr::include_graphics(("table_sb01_AISabove.jpg"))
 knitr::include_graphics(("table_sb03_AISabove.jpg"))
@@ -266,8 +265,33 @@ Close
 </button>
 :::
 
+::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
+# **How much noise do nearby ships contribute to the soundscape?**
+Ships are considered nearby if transiting within 10 km of the monitoring location. When ships are
+transiting nearby sound levels increase because of noise produced by the ship. Ship presence is tracked using Automatic 
+Identification System (AIS) data which most vessels are required to transmit
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("**ADD CAPTION**" ) }
+knitr::include_graphics(("plot_sb01_AIShist.jpg"))
+knitr::include_graphics(("plot_sb03_AIShist.jpg"))
+```
+<button onclick="document.getElementById(&#39;infoModal4&#39;).showModal()">
+Table of results
+</button>
+
+<dialog id="infoModal4">
+
+<p> Summary of nearby AIS ship traffic.</p>
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("**ADD CAPTION**" )}
+# Load and display an image with a caption
+knitr::include_graphics(("table_sb01_AIShist.jpg"))
+knitr::include_graphics(("table_sb03_AIShist.jpg"))
+```
+<button onclick="document.getElementById(&#39;infoModal4&#39;).close()">
+Close
+</button>
+:::
 
 ::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
 # **What are we learning?**
-Coming soon...
+Through collaborative partnerships we are discovering even more from the ONMS ocean sound data. These strategic partnerships help us gain key insights on sanctuary resources and conditions from ocean sound data by leveraging ecological and technological expertise.
 :::
