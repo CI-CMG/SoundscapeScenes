@@ -20,11 +20,12 @@ library(grid)
 #INPUT PARAMS ####
 DC = Sys.Date()
 project = "ONMS"
-site = "sb03" # nrs11 mb02"
-site1 =  "sb03" #cbnrs11 is weird...
+site = "pm01" # nrs11 mb02"
+site1 =  "pm01" #cbnrs11 is weird...
 fqIn = "TOL_125" 
 ab = 70 # threshold for above frequency in
 fqIn2 = "TOL_100" # no wind model for 125 Hz- ugh!!!
+fqIn2name = "100 Hz"
 ab2 = 5
 windUpp = 22.6 #which wind model result to show on plot
 windLow = 1
@@ -44,7 +45,7 @@ outDirG = paste0( outDir,"report\\" ) #graphics
   
 # LOAD ONMS Metadata ####
 metaFile = paste0(outDirC,"ONMSSound_IndicatorCategories.xlsx")
-lookup = as.data.frame ( read.xlsx(metaFile, sheetIndex = 1) )
+lookup = as.data.frame ( read.xlsx(metaFile, sheet = "Summary") )
 colnames(lookup) = lookup[1, ]         # Set first row as column names
 lookup = as.data.frame( lookup[-1, ] ) # Remove the first row
 lookup = as.data.frame( lookup[!apply(lookup, 1, function(row) all(is.na(row))), ] )
@@ -52,7 +53,7 @@ siteInfo = lookup[lookup$`NCEI ID` == site,]
 siteInfo = siteInfo[!is.na(siteInfo$`NCEI ID`), ]
 ## frequency of interest ####
 # tab 2 in lookup tables
-FOI = as.data.frame ( read.xlsx(metaFile, sheetIndex = "Frequency of Interest") )
+FOI = as.data.frame ( read.xlsx(metaFile, sheet = "Frequency of Interest") )
 FOI = FOI[!apply(FOI, 1, function(row) all(is.na(row))), ]
 FOI$Sanctuary = tolower(FOI$Sanctuary)
 FOIs = FOI [ FOI$Sanctuary == substr(site1, 1,2), ]
@@ -61,17 +62,23 @@ sidx = siteInfo$Seasonality
 if ( is.na(sidx) ) {
   season = data.frame(
     Season = c("Winter", "Spring", "Summer", "Fall"),
-    Months = c("1,2,3", "4,5,6", "7,8,9", "10,11,12") )
+    Months = c("1,2,3", "4,5,6", "7,8,9", "10,11,12") ,
+  values = c(  "#56B4E9",  "#009E73","#CC79A7", "#E69F00") )
+}else if  ( sidx == "other") {
+  season = data.frame(
+    Season = c("Early", "Peak", "Late", "Non"),
+    Months = c("10,11,12", "1,2,3", "4,5,6", "7,8,9") ,
+    values = c(  "#56B4E9",  "#009E73","#CC79A7", "#E69F00") )
 }else {
   season = data.frame(
     Season = c("Winter", "Spring", "Summer", "Fall"),
-    Months = c("1,2,3", "4,5,6", "7,8,9", "10,11,12") )
+    Months = c("1,2,3", "4,5,6", "7,8,9", "10,11,12"),
+    values = c(  "#56B4E9",  "#009E73","#CC79A7", "#E69F00") )
 }
-# TOL conversion
-TOL_convert = read.csv(paste0(outDirC,"TOLconvert.csv"))
-TOL_convert$Nominal = paste0("TOL_",TOL_convert$Center)
+
+
 ## times of interest ####
-TOI = as.data.frame ( read.xlsx(metaFile, sheetIndex = "Time period of interest") )
+TOI = as.data.frame ( read.xlsx(metaFile, sheet = "Time period of interest") )
 TOI = TOI[!apply(TOI, 1, function(row) all(is.na(row))), ]
 TOIs = TOI [ TOI$Site == (site1), ]
 TOIs <- TOIs %>%
@@ -81,6 +88,10 @@ TOIs <- TOIs %>%
     Mid_Julian = (Start_Julian + End_Julian) / 2  # Midpoint for annotation
   )
 TOIs$yr = TOIs$Year
+
+# TOL conversion ####
+TOL_convert = read.csv(paste0(outDirC,"TOLconvert.csv"))
+TOL_convert$Nominal = paste0("TOL_",TOL_convert$Center)
 
 # LOAD SPL-TOL DATA ####
 # HOURLY TOLs with wind estimate (gps)
@@ -92,28 +103,31 @@ ed = as.Date( max(gps$UTC) )
 udays = length( unique(as.Date(gps$UTC)) )
 cat("Input Data - ", site, " has ", udays, " unique days (", as.character(st), " to ",as.character(ed), ")\n")
 Fq = as.numeric( as.character( gsub("TOL_", "",  colnames(gps)[grep("TOL", colnames(gps))] ) ))
-
+# HOURS in each Month-Year
 summary <- gps %>%
   mutate(
     year = year(UTC),  # Extract Year
     month = format(UTC, "%m")  # Extract Month (numeric format)
   ) %>%
   count(year, month)  # Count occurrences (hours) in each year-month
+summary$month
+summary$dy = round(summary$n/ 24)
 
-p1 = ggplot(summary, aes(x = month, y = n, fill = as.factor(year))) +
-  geom_col(position = "dodge") +  # Use dodge to separate bars for each year within the same month
+p1 = ggplot(summary, aes(x = month, y = dy, fill = as.factor(year))) +
+  geom_col(position = "dodge", width = .3) +  # Use dodge to separate bars for each year within the same month
   labs(
     caption = paste0(toupper(site), " has ", udays, 
                      " unique days: ", as.character(st), " to ", as.character(ed)),
     x = "",
-    y = "Total Hours",
+    y = "Days",
     fill = "Year"
   ) +
-  scale_x_discrete(labels = month.name) +  # Show month names instead of numbers
-  scale_fill_manual(values = rev(gray.colors(length(unique(summary$year))))) +  # Create grayscale colors
+  scale_x_discrete(labels = month.abb) +  # Show month names instead of numbers
+  #scale_fill_manual(values = rev(gray.colors(length(unique(summary$year))))) +  # Create grayscale colors
+  scale_fill_manual(values = rev(colorRampPalette(c("darkblue", "lightblue"))(length(unique(summary$year))))) +
   theme_minimal() +
   theme(
-    axis.text.x = element_text(angle = 0, hjust = 1),  # Rotate x-axis labels for readability
+    axis.text.x = element_text(angle = 30, hjust = 1),  # Rotate x-axis labels for readability
     legend.position = "top"  # Place the legend at the top
   )
 
@@ -127,6 +141,32 @@ for( ss in 1:length(seas) ){
   moi = as.numeric(unlist(strsplit(as.character(season$Months[ss]), ",")))
   gps$Season[gps$mth %in% moi] = season$Season[ss]
 }
+unique( gps$Season)
+# sampling per season  
+summary2 <- gps %>%
+  mutate(
+    year = year(UTC),  # Extract Year
+    month = format(UTC, "%m")  # Extract Month (numeric format)
+  ) %>%
+  count(year, Season)  # Count occurrences (hours) in each year-month
+names(summary2)
+p2 = ggplot(summary2, aes(x = year, y = n, fill = as.factor(Season))) +
+  geom_col(position = "dodge", width = .3) +  # Use dodge to separate bars for each year within the same month
+  labs(
+    caption = paste0(toupper(site), " has ", udays, 
+                     " unique days: ", as.character(st), " to ", as.character(ed)),
+    x = "",
+    y = "Hours",
+    fill = "Year"
+  ) +
+  #scale_x_discrete(labels = month.abb) +  # Show month names instead of numbers
+  scale_fill_manual(values = season$values) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1),  # Rotate x-axis labels for readability
+    legend.position = "none"  # Place the legend at the top
+  )
+p2
 
 # ADD WIND ####
 ## category ####
@@ -238,51 +278,53 @@ p = ggplot() +
             aes(x = Frequency, y = SoundLevel, color = Season), linewidth = 2) +
   
   # Set color and fill to match seasons
-  scale_color_manual(values = c("Winter" = "#56B4E9", "Spring" = "#009E73", 
-                                "Summer" = "#CC79A7", "Fall" = "#E69F00")) +
-  scale_fill_manual(values = c("Winter" = "#56B4E9", "Spring" = "#009E73", 
-                               "Summer" = "#CC79A7", "Fall" = "#E69F00")) + 
-  #median TOL values
-  #geom_line(data = mallData[mallData$Quantile == "50%",], aes(x = Frequency, y = SoundLevel, color = Season), linewidth = 2) +
-  #scale_color_manual(values = c("Winter" = "#56B4E9", "Spring" = "#009E73", "Summer" = "#CC79A7", "Fall" = "#E69F00")) +
-  #shade for 25/75 TOL values... coming soon
-  #add wind model values
+  scale_color_manual(values = season$values )+
+  scale_fill_manual(values = season$values ) +
+
+  # Wind model values
   geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == windUpp,], aes(x = variable, y = value), color = "black",  linewidth = 1) +
   geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == windLow,], aes(x = variable, y = value), color = "black",  linewidth = 1) +
   scale_x_log10(labels = label_number(),limits = (c(10,fqupper))) +  # Log scale for x-axis
 
   # Add vertical lines at FQstart
   geom_vline(data = FOIs, aes(xintercept = FQstart, color = Label), linetype = "dashed", color = "black",linewidth = .5) +
-    # Add labels at the bottom of each line
+  geom_rect(data = FOIs, aes(xmin = FQstart, xmax = FQend, ymin = -Inf, ymax = Inf), 
+            fill = "gray", alpha = 0.2)+  # Adjust alpha for transparency
+  # Add labels at the bottom of each line
   geom_text(data = FOIs, aes(x = FQstart, y = 50, label = Label), angle = 90, vjust = 1, hjust = 0.5, size = 3) +
-  #scale_color_manual(values = setNames(FOI$Color, FOI$Label)) +
   
   # Additional aesthetics
-  
   theme_minimal()+
   theme(legend.position = "top",
         plot.title = element_text(size = 16, face = "bold", hjust = 0)) +  # This line removes the legend
   labs(
-    title = paste0("Sounscape Contributions at ", toupper(site), ", a ", 
+    title = paste0("Soundscape Overview at ", toupper(site), ", a ", 
                    tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
-    subtitle = paste0( "data summarized from ", st, " to ", ed, "\n verticle lines indicate frequencies for sounds of interest in this soundscape" ),
+    subtitle = paste0( "data summarized from ", st, " to ", ed, "\n vertical lines indicate frequencies for sounds of interest in this soundscape" ),
     caption = paste0("black lines are expected wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
     x = "Frequency Hz",
     y = expression(paste("Sound Levels (dB re 1 ", mu, " Pa/Hz)" ) )
   )
 
 separator <- grid.rect(gp = gpar(fill = "black"), height = unit(2, "pt"), width = unit(1, "npc"))
-arranged_plot = grid.arrange(p,separator, l,heights =c(4, 0.05, 0.8))
-
+# arranged_plot = grid.arrange(p, separator, l, heights =c(4, 0.05, 0.8))
+arranged_plot = grid.arrange(p, separator, p2, heights =c(4, 0.1, 2))
 ## save: seasonal spectra ####
 ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_SeasonalSPL.jpg"), plot = arranged_plot, width = 10, height = 10, dpi = 300)
 
 # YEARLY ANALYSIS ####
+names(gps)
+if (sidx == "other"){ #only keep peak
+  gpsAll = gps
+  gps = gps[gps$Season == "Peak",]
+  unique( gps$yr )
+}
 tol_columns = grep("TOL", colnames(gps))
-season_split = split(gps, gps$yr) # Calculate quantiles for each season
+season_split = split(gps, gps$yr) # Calculate quantiles for each year
 season_quantiles = lapply(season_split, function(season_data) {
   apply(season_data[, tol_columns, drop = FALSE], 2, quantile, na.rm = TRUE)
 })
+
 tol_columns = grep("TOL", colnames(gps))
 yearAll = NULL
 for (ii in 1: length(season_quantiles) ) {
@@ -339,16 +381,50 @@ p = ggplot() +
   theme(legend.position = "top",
         plot.title = element_text(size = 16, face = "bold", hjust = 0)) +  # This line removes the legend
   labs(
-    title =  paste0("Yearly Soundscape Comparison at ", toupper(site), ", a ", 
+    title =  paste0(toupper(site), ", a ", 
                     tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
-    subtitle = paste0( "data summarized from ", st, " to ", ed, "\n verticle lines indicate frequencies for sounds of interest in this soundscape" ),
-    caption = paste0("black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
+    subtitle = paste0( "Data summarized from ", st, " to ", ed),
+    caption  = paste0("black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s] \n",
+                     "Vertical lines indicate frequencies for sounds of interest in this soundscape",
+                     "\n Seasonality = ", sidx),
     x = "Frequency Hz",
     y = expression(paste("Sound Levels (dB re 1 ", mu, " Pa/Hz)" ) )
   )
 p
+
+summary <- gps %>%
+  mutate(
+    year = year(UTC),  # Extract Year
+    month = format(UTC, "%m")  # Extract Month (numeric format)
+  ) %>%
+  count(year, month)  # Count occurrences (hours) in each year-month
+summary$month
+summary$dy = round(summary$n/ 24)
+
+p1 = ggplot(summary, aes(x = month, y = n, fill = as.factor(year))) +
+  geom_col(position = "dodge", width = .3) +  # Use dodge to separate bars for each year within the same month
+  labs(
+    caption = paste0(toupper(site), " has ", udays, 
+                     " unique days: ", as.character(st), " to ", as.character(ed)),
+    x = "",
+    y = "Days",
+    fill = "Year"
+  ) +
+  scale_x_discrete(labels = month.abb) +  # Show month names instead of numbers
+  #scale_fill_manual(values = rev(gray.colors(length(unique(summary$year))))) +  # Create grayscale colors
+  scale_fill_manual(values = rev(colorRampPalette(c("darkblue", "lightblue"))(length(unique(summary$year))))) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1),  # Rotate x-axis labels for readability
+    legend.position = "none"  # Place the legend at the top
+  )
+
+p1
+separator <- grid.rect(gp = gpar(fill = "black"), height = unit(2, "pt"), width = unit(1, "npc"))
+# arranged_plot = grid.arrange(p, separator, l, heights =c(4, 0.05, 0.8))
+pYear = grid.arrange(p, separator, p1, heights =c(4, 0.1, 1.5))
 ## save: yearly spectra ####
-ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_YearSPL.jpg"), plot = p, width = 10, height = 6, dpi = 300)
+ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_YearSPL.jpg"), plot = pYear, width = 10, height = 6, dpi = 300)
 
 # CONVERT ALL DATA TO 1 Hz  ####
 gpsBB = gps
@@ -436,8 +512,8 @@ p = ggplot(dailyFQ_complete, aes(x = Julian, y = TOL100_50, group = yr, color = 
         strip.background = element_blank(),  # Remove background behind facet labels
         panel.spacing = unit(.1, "lines") ) + # Adjust the spacing between facets) +
   labs(
-    title = paste0("Contribution of ship noise to the soundscape at 125 Hz" ) ,
-    subtitle =  paste0(toupper(site), ", a ", tolower(FOI$Oceanographic.setting[1]), " monitoring site \nshaded areas represents ", TOIs$Label[1] ),
+    title = paste0("Soundscape at 125 Hz" ) ,
+    subtitle =  paste0(toupper(site), ", a ", tolower(FOIs$Oceanographic.setting[1]), " monitoring site \nshaded areas represents ", TOIs$Label[1] ),
     caption = '',
     x = "",
     y = expression(paste("Sound Levels (125 Hz dB re 1", mu, " Pa/Hz)" ) ),
@@ -449,7 +525,7 @@ ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_125Hz.jpg"), plot = 
 
 
 # TIME SERIES - exceedence 100 Hz  ####
-cols_to_select = c("UTC", "windMag","wind_category",fqIn2)
+cols_to_select = c("UTC", "windMag","wind_category", "Season", fqIn2)
 gpsFQ = gps %>% select(all_of(cols_to_select))
 #ADD wind speed estimate for each hour of data in frequency of interest
 wspeeds = unique( (windModel$windSpeed) )
@@ -460,6 +536,64 @@ wsIdx <- match(gpsFQ$closest_windMag, windInfo$windSpeed)
 gpsFQ$WindModel100 <- windInfo[wsIdx, fqIdx]
 names(gpsFQ)
 gpsFQ$Exceed = gpsFQ$TOL_100 -  gpsFQ$WindModel100 #actual - model
+gpsFQ$yr = year(gpsFQ$UTC)
+
+gpsFQ$Windthres = "unk"
+gpsFQ$Windthres[gpsFQ$Exceed <= ab2] = "below"
+gpsFQ$Windthres[gpsFQ$Exceed > ab2] = "above"
+
+# above 
+names(gpsFQ)
+seasonalNE = gpsFQ %>%
+  mutate(Date = as.Date(UTC)) %>%
+  group_by(Season, yr) %>%
+  summarise(
+    hrs = n(),  # Count of observations
+    percent_above = sum(Windthres == "above", na.rm = TRUE) / hrs * 100,
+    #Exceed_25 = quantile(Exceed, 0.25, na.rm = TRUE),
+    Exceed_50 = quantile(Exceed, 0.50, na.rm = TRUE), # Median
+    #Exceed_75 = quantile(Exceed, 0.75, na.rm = TRUE),
+    #TOL100_25 = quantile(.data[[fqIn2]], 0.25, na.rm = TRUE),
+    TOL100_50 = quantile(.data[[fqIn2]], 0.50, na.rm = TRUE),
+    #TOL100_75 = quantile(.data[[fqIn2]], 0.75, na.rm = TRUE),
+    windspeed = quantile(windMag, 0.50, na.rm = TRUE)
+  )
+
+seasonalNE = as.data.frame( seasonalNE )
+seasonalNE = seasonalNE %>%
+  mutate(Season = factor(Season, levels = c("Winter", "Spring", "Summer", "Fall")))
+
+seasonalTime_wide = seasonalNE %>%
+  select(Season, yr, percent_above) %>%  
+  mutate(percent_above = round(percent_above, 0) ) %>% 
+  pivot_wider(names_from = yr, values_from = percent_above) %>%
+  arrange(Season) 
+seasonalTime_wide <- seasonalTime_wide %>%
+  select(Season, sort(names(seasonalTime_wide)[-1]))  # Skip the Season column and sort the year columns
+
+
+seasonalNE_wide <- seasonalNE %>%
+  select(Season, yr, Exceed_50) %>%  
+  mutate(Exceed_50 = round(Exceed_50, 1),
+         yr = factor(yr, levels = sort(unique(yr))) 
+  ) %>%
+  pivot_wider(names_from = yr, values_from = Exceed_50 ) %>%
+  arrange(Season) 
+seasonalNE_wide <- seasonalNE_wide %>%
+  select(Season, sort(names(seasonalNE_wide)[-1]))
+## save: table dB above ####
+title_grob = textGrob( paste0("% Time Above Wind Noise (", site, ") \n", 
+                              "(hourly values ", ab2 , " dB or more above wind model value at ", fqIn2name,")"), 
+                       gp = gpar(fontsize = 12, fontface = "bold") , vjust = 1)
+table_grob = tableGrob(as.data.frame( seasonalTime_wide), rows = NULL )
+title_grob2 = textGrob( paste0("Decibels Above Wind Noise \n",
+                               "(median decibels difference from wind model at ", fqIn2name,")"), 
+                       gp = gpar(fontsize = 12, fontface = "bold") , vjust = 1)
+table_grob2 = tableGrob(as.data.frame( seasonalNE_wide), rows = NULL )
+combined_grob = arrangeGrob(title_grob, table_grob, title_grob2, table_grob2, ncol = 2)  
+
+ggsave(paste0(outDirG, "table_", site, "_AboveWind.jpg"), combined_grob, width = 10, height = 8)
+
 
 dailyFQ = gpsFQ %>%
   mutate(Date = as.Date(UTC)) %>%
@@ -530,12 +664,12 @@ pE = ggplot(dailyFQ_complete, aes(x = Julian, y = Exceed_50, group = yr, color =
     panel.spacing = unit(.1, "lines") ) + # Adjust the spacing between facets) +
   
   labs(
-    title =paste0("Contribution of ship noise to the soundscape" ),
-    subtitle =  paste0(toupper(site), ", a ", tolower(FOI$Oceanographic.setting[1]), " monitoring site \nshaded areas represents ", TOIs$Label[1] ) ,
-    caption = paste0("exceedance calculated as the difference in measured sound level from modeled sound levels based on wind speed at 100 Hz
-                     threshold for % above = ", ab2, "dB"),
+    title =paste0("Decibels Above Wind Noise" ),
+    subtitle =  paste0(toupper(site), ", a ", tolower(FOIs$Oceanographic.setting[1]), " monitoring site \nshaded areas represents ", TOIs$Label[1] ) ,
+    caption = paste0("difference between sound level and modeled sound levels based on wind speed at ", fqIn2name, "
+                      threshold for % above = ", ab2, "dB"),
     x = "",
-    y = expression(paste("Noise Exceedance (decibels)" ) ),
+    y = expression(paste("Decibels Above Wind Noise" ) ),
     color = "Year"  # Label for the color legend
   ) 
 pE
@@ -613,3 +747,4 @@ ggplot(percentage_above, aes(x = mth, y = Percentage, fill = Threshold_Category,
 
 # save: updated data ####
 save(gps, file = paste0(outDirP, "data_", tolower(site), "_HourlySPL-gfs-season_", DC, ".Rda") )
+

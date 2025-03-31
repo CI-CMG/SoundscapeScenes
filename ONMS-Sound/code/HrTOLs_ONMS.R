@@ -18,7 +18,7 @@ library(xlsx)
 
 # SET UP PARAMS ####
 DC = Sys.Date()
-site  = "sb01" #MB02
+site  = "MB02" #MB02
 site = tolower(site) # "mb01"
 
 dirSS = "F:\\SanctSound" # SANCTSOUND
@@ -36,7 +36,7 @@ lookup = as.data.frame( lookup[-1, ] ) # Remove the first row
 lookup = as.data.frame( lookup[!apply(lookup, 1, function(row) all(is.na(row))), ] )
 siteInfo = lookup[lookup$`NCEI ID` == site,]
 siteInfo = siteInfo[!is.na(siteInfo$`NCEI ID`), ]
-
+siteInfo
 # CHECK FOR PROCESSED FILES #### 
 pFile = list.files(path = (outDirP), pattern = paste0("filesProcesed_",site), full.names = T, recursive = T)
 if (length(pFile) > 0 ) {
@@ -91,9 +91,12 @@ if (length(inFiles) > 0 ) {
 # download before running... 
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/nrs/products/sound_level_metrics/11 F:/ONMS/nrs11
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/mb01 F:/ONMS/mb01
-# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/sb01 F:/ONMS/sb03
+# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/sb01 F:/ONMS/sb01
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/oc02 F:/ONMS/oc02
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/mb02  F:\ONMS\mb02
+# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/pm01 F:/ONMS/pm01
+# gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/pm02 F:/ONMS/pm02
+
 inFiles = list.files(dirGCP, pattern = "MinRes", recursive = T, full.names = T)
 inFiles = inFiles[!grepl(".png",inFiles) ]
 inFiles = inFiles[!grepl(".csv",inFiles) ]
@@ -142,8 +145,10 @@ if( length(sData) == 0 & length(cData)==0 ){ # No new files
   #GET WIND/WEATHER DATA
   gps = matchGFS(aData) #PAMscapes function that matches weather to all 
   save(gps, file = paste0(outDirP, "data_", tolower(site), "_HourlySPL-gfs_", DC, ".Rda") )
-  
-} else if (length(sData) == 0 & length(cData) > 0) {  # just onms data
+ # names(gps)
+  # gps[is.na(gps$windMag),]
+ 
+  } else if (length(sData) == 0 & length(cData) > 0) {  # just onms data
  
   
   if (length(aData) > 0){ #already processed data

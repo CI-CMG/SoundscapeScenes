@@ -27,13 +27,17 @@ library (geosphere)
 DC = Sys.Date()
 
 # INPUT - 
-inDir = "F:\\ONMS\\overview" #"G:\\My Drive\\ActiveProjects\\SANCTSOUND_shared\\ONMS"
-setwd(inDir)
+outDir =  "F:\\CODE\\GitHub\\SoundscapeScenes\\ONMS-Sound\\" 
+outDirC = paste0( outDir,"context\\") #context
+outDirP = paste0( outDir,"products\\onms\\")#products
+outDirG = paste0( outDir,"report\\" ) #graphics
+setwd(outDirP)
 
 #PLOT MAP OF REGION ####
-load("map_ONMS_map_2024-11-05.Rda" )
-outputMap2a$Latitude = as.numeric(as.character(gsub("°","", outputMap2a$Latitude)) )
-outputMap2a$Longitude = as.numeric(as.character(gsub("°","", outputMap2a$Longitude)) )
+load("map_ONMS_map.Rda" )
+names(outputMap2a)
+outputMap2a$Latitude  = as.numeric(as.character(gsub("B0","", outputMap2a$Latitude)) )
+outputMap2a$Longitude = as.numeric(as.character(gsub("B0","", outputMap2a$Longitude)) )
 outputMap2a$TotalDays = as.numeric( outputMap2a$TotalDays )
 output = outputMap2a[outputMap2a$Sanctuary =="MB",]
 data_sf = st_as_sf(output, coords = c("Longitude", "Latitude"), crs = 4326)

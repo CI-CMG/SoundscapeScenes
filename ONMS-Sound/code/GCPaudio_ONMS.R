@@ -27,8 +27,10 @@ gcpDir  = "gs://noaa-passive-bioacoustic/onms/audio" #ONMS
 gcpDir2 = "gs://noaa-passive-bioacoustic/sanctsound/audio" #SANCTSOUND
 projectN = "onms" #nrs # set this to deal with different metadata formats
 projectN2 = "sanctsound" #nrs # set this to deal with different metadata formats
-outputDir = "F:\\ONMS//overview"   #"G:\\My Drive\\ActiveProjects\\SANCTSOUND_shared\\ONMS"
-inFile = paste0(outputDir, "//ONMSSound_IndicatorCategories_2024-10-29.xlsx")
+
+outDir =  "F:\\CODE\\GitHub\\SoundscapeScenes\\ONMS-Sound\\" 
+outputDir = paste0( outDir,"products\\onms\\")   
+inFile = paste0(outDir, "context//ONMSSound_IndicatorCategories.xlsx")
 lookup = as.data.frame ( read.xlsx(inFile) )
 colnames(lookup) <- lookup[1, ]  # Set first row as column names
 lookup <- as.data.frame( lookup[-1, ] )          # Remove the first row
@@ -42,11 +44,10 @@ subdirs = system2(command, args, stdout = TRUE, stderr = TRUE)
 command = "gsutil"
 args =  c("ls", gcpDir2)
 subdirs2 = system2(command, args, stdout = TRUE, stderr = TRUE)  
-#paste onms + sanctsound
-subdirsALL = c(subdirs, subdirs2)
-
+subdirsALL = c(subdirs, subdirs2) #paste onms + sanctsound
 dirNames  = sapply(strsplit(basename( subdirsALL ), "/"), `[`, 1)
 cat("Processing... ", projectN, length(dirNames), "directories" )
+
 #read one file
 args = c("ls", "-r", subdirsALL[1])
 sFiles = system2(command, args, stdout = TRUE, stderr = TRUE)  
@@ -59,7 +60,7 @@ tmp = fromJSON(paste(url, collapse = ""))
 
 # GET INFORMATION FROM METADATA FILES ####
 output = NULL
-for (s in 1:length(subdirsALL) ) { # s=21
+for (s in 1:length(subdirsALL) ) { # s = 1
   
   # read in files
   args = c("ls", "-r", subdirsALL[s])
@@ -82,7 +83,7 @@ for (s in 1:length(subdirsALL) ) { # s=21
       start = as.Date( gsub("T"," ", tmp$DEPLOYMENT$AUDIO_START), format = "%Y-%m-%d")
       end   = as.Date( gsub("T"," ", tmp$DEPLOYMENT$AUDIO_END), format = "%Y-%m-%d")
       lat   = tmp$DEPLOYMENT$DEPLOY_LAT
-      lon   = tmp $DEPLOYMENT$DEPLOY_LON
+      lon   = tmp$DEPLOYMENT$DEPLOY_LON
       
       #save to output data - each deployment
       output = rbind(output, c(subdirsALL[s], jf, name, instr, 
@@ -110,7 +111,7 @@ for (s in 1:length(subdirsALL) ) { # s=21
         start = as.Date( gsub("T"," ", tmp$DEPLOYMENT$AUDIO_START), format = "%Y-%m-%d")
         end   = as.Date( gsub("T"," ", tmp$DEPLOYMENT$AUDIO_END), format = "%Y-%m-%d")
         lat   = tmp$DEPLOYMENT$DEPLOY_LAT
-        lon   = tmp $DEPLOYMENT$DEPLOY_LON
+        lon   = tmp$DEPLOYMENT$DEPLOY_LON
         
       } else {
         range = tmp$DATA_QUALITY$'1'$`Date Range`
@@ -134,12 +135,11 @@ for (s in 1:length(subdirsALL) ) { # s=21
 output = as.data.frame(output)
 colnames(output) = c("Path", "DeploymentNumber", "DeploymentName", "Instrument", "Start_Date", "End_Date","Lat","Lon")
 output$Site = basename((output$Path))
-output$Start_Date <- as.Date(output$Start_Date, format = "%Y-%m-%d")
-output$End_Date <- as.Date(output$End_Date, format = "%Y-%m-%d")
+output$Start_Date = as.Date(output$Start_Date, format = "%Y-%m-%d")
+output$End_Date = as.Date(output$End_Date, format = "%Y-%m-%d")
 
-#add site names from look-up colnames(lookup)
-# load(file = paste0(outputDir, "\\GCPaudio_ONMS_gantt_", DC, ".Rda") )
-# unique(lookup$`NCEI ID`)
+# ADD INFO from lookup ####
+colnames(lookup)
 matched_data = merge(output, lookup, by.x = "Site", by.y = "NCEI ID", all.x = TRUE)
 # matched_data = output %>%   left_join(lookup, by = c("Site" = "NCEI ID"))
 output$Region = matched_data$Region
@@ -204,8 +204,8 @@ ggsave(filename = paste0(outputDir, "/gantt_ONMS_", DC, ".jpg"), plot = pT, widt
 
 # Assuming your data frame is named 'data'
 # Convert the data frame to an sf object for mapping
-outputMap2a$Latitude = as.numeric(as.character( gsub("°", '', outputMap2a$Latitude )) )
-outputMap2a$Longitude = as.numeric(as.character( gsub("°", '', outputMap2a$Longitude )) )
+outputMap2a$Latitude = as.numeric(as.character( gsub("B0", '', outputMap2a$Latitude )) )
+outputMap2a$Longitude = as.numeric(as.character( gsub("B0", '', outputMap2a$Longitude )) )
 outputMap2a$TotalDays = as.numeric(as.character(outputMap2a$TotalDays))
 data_sf <- st_as_sf(outputMap2a, coords = c("Longitude", "Latitude"), crs = 4326)
 

@@ -1,0 +1,175 @@
+---
+title: "Soundscape Inventory Report"
+author: "Stellwagen Bank National Marine Sanctuary"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    fig_caption: true
+    toc: true         # Enables the Table of Contents
+    toc_depth: 3      # Includes up to H3 headings
+    toc_float: true   # Makes the TOC float on the side
+    number_sections: true # (Optional) Adds numbering to headings
+params:
+  author: "Stellwagen Bank National Marine Sanctuary"
+  abrv: "SBNMS"
+  sitetype: "nearshore"
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(xlsx)
+library(knitr)
+library(kableExtra)
+
+# Read Excel file (update the file path accordingly)
+site = c("sb01","sb03")
+inDir = "F:\\CODE\\GitHub\\SoundscapeScenes\\ONMS-Sound\\context\\"
+metaFile = paste0(inDir,"ONMSSound_IndicatorCategories.xlsx")
+lookup = as.data.frame ( read.xlsx(metaFile, sheetIndex = 1) )
+colnames(lookup) = lookup[1, ]         # Set first row as column names
+lookup = as.data.frame( lookup[-1, ] ) # Remove the first row
+lookup = as.data.frame( lookup[!apply(lookup, 1, function(row) all(is.na(row))), ] )
+siteInfo = lookup[lookup$`NCEI ID` == site,]
+siteInfo = siteInfo[!is.na(siteInfo$`NCEI ID`), ]
+
+siteDetails = as.data.frame ( read.xlsx(metaFile, sheetIndex = "SB") )
+siteDetails = siteDetails[rowSums(is.na(siteDetails)) != ncol(siteDetails), ]
+siteDetails = siteDetails[rowSums(is.na(siteDetails)) != ncol(siteDetails), ]
+siteDetails <- siteDetails[, colSums(is.na(siteDetails)) != nrow(siteDetails)]
+```
+
+::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
+# **What is ocean sound?**
+Ocean sound refers to the collection of acoustic energy present in marine environments, encompassing a variety of sources, including sounds from marine animals, geophysical noise from waves, wind, rain, and human generated noise from shipping, sonar, and offshore construction. This collection of sound at a given place and time is often called a soundscape. Monitoring ocean soundscapes provides key insight to understanding ecosystem dynamics, detecting environmental changes, and managing the impacts of noise pollution on marine organisms. Learn more about ocean sounds at [Discovery of Sound in the Sea](https://dosits.org/).
+
+**Why do we care?** Ocean sound is critical for the survival of many marine animals because it is a primary means of communication, orientation and navigation, finding food, avoiding predators, and choosing mates. As such, human activities that produce underwater sounds have the potential to negatively impact animals by reducing their ability to hear prey, predators, and each other. **US National marine sanctuaries** are home to many acoustically active marine animals and understanding the presence and impacts of noise is a conservation priority. Further, the occurrence and types of sounds present offer key insights on animal presence, species behaviors, human-use patterns, and changing ocean conditions.
+:::
+
+::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
+# **When, where, & why are we listening?**
+NOAA's Office of National Marine Sanctuaries (ONMS) maintains a nationally coordinated underwater sound monitoring network across the National Marine Sanctuary System, known as [ONMS Sound](https://sanctuaries.noaa.gov/science/monitoring/sound/). ONMS sound works with partners to monitor off the US East Coast, in the Gulf of Mexico, off the West Coast and in the Pacific Islands region. Ocean Sound monitoring sites are located in strategic locations within sanctuary boundaries and records continuously. Audio recordings and standardized sound measurements are available through the NOAA National Centers for Environmental Information's Passive Acoustic Archive. Explore the acoustic monitoring sites [here](https://www.ncei.noaa.gov/maps/passive-acoustic-data/).
+
+The [**`r params$author`**](https://stellwagen.noaa.gov/) is a wild ocean place near an urban world, sits east of Boston, Massachusetts between Cape Ann and Cape Cod. Historically important as a fishing ground, New England's only national marine sanctuary now reigns as a premier whale watching destination and continues to support commercial and recreational fishing.
+
+**Ocean sound monitoring** within **`r params$abrv`** has a long history of underwater acoustic monitoring with a focus on monitoring of [marine mammal](https://www.frontiersin.org/journals/remote-sensing/articles/10.3389/frsen.2022.970401/full),
+including the endangered North Atlantic Right Whale presence. As well as [noise reduction](https://link.springer.com/article/10.1007/s10661-024-12497-2) during [vessel speed reduction programs](https://www.fisheries.noaa.gov/national/endangered-species-conservation/reducing-vessel-strikes-north-atlantic-right-whales#current-vessel-speed-restrictions).
+
+**Current ocean sound monitoring and analysis** is maintained at four sites within **`r params$abrv`**. Two sites (SB01,SB02,SB03) are located more inshore, capturing more local vessel activity and sounds from nearshore species. The one offshore sites (NRS09) capture patterns in migrating whales and transiting commercial vessel traffic and is part of the [US Ocean Noise Reference Station Network](https://www.pmel.noaa.gov/acoustics/noaanps-ocean-noise-reference-station-network).
+
+**Summary of ocean sound monitoring sites**
+```{r, echo=FALSE, warning=FALSE, message=FALSE, out.width="25%", out.height="25%"}
+siteDetails %>% 
+  kable("html") %>% 
+  kable_styling(full_width = FALSE) %>% 
+  scroll_box(width = "100%", height = "400px")
+```
+:::
+
+::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
+# **What is a soundscape?**
+Soundscapes are complex -- representing all the types of sounds present at a given time and location and influenced by the weather. **How do we visualize this information?** Let's start with the main contributions to a soundscape: the colored lines represent **seasonal differences**, vertical lines indicate different sound **sources of interest** and what frequency(s) represents the source, and the black lines bound the soundscape to **expected range** based on when only wind noise is present. We can track these different contributions over time to understand how soundscape are changing.  We can also compare across locations.
+
+```{r, echo=FALSE, warning=FALSE, message = FALSE, fig.cap=paste("**A visualization of ocean sound.** Seasonal summary of measured sound levels (colored lines) shown as median hourly values over all available data. Vertical lines indicate representative frequencies for different sound sources. The bottom bar shows how the data are distributed in the different wind categories: low < 5 m/s, med 5-10 m/s, high >10 m/s. Dotted lines are modeled wind noise at this depth based on[Hildebrand et al 2021](https://www.google.com/url?q=https://pubs.aip.org/asa/jasa/article/149/6/4516/1059383&sa=D&source=docs&ust=1739833923518127&usg=AOvVaw24yaJ1b4fPnOnoYFke3nuD)." )}
+knitr::include_graphics(("plot_sb01_SeasonalSPL.jpg") )
+knitr::include_graphics(("plot_sb03_SeasonalSPL.jpg") )
+```
+
+<button onclick="document.getElementById(&#39;infoModal&#39;).showModal()">
+
+How was this calculated?
+
+</button>
+
+<dialog id="infoModal">
+
+<p>The median power spectral densities (PSD) for all hours across all
+years are calculated from calibrated audio data using community software
+tools:
+<a href="https://github.com/MarineBioAcousticsRC/Triton/tree/master" target="_blank">Triton Soundscape Metrics</a>, <a href="https://pubs.aip.org/asa/jel/article/1/1/011203/219719" target="_blank">MANTA</a>, or <a href="https://github.com/lifewatch/pypam" target="_blank">PyPAM</a>. Triton software calculates the one-third octave band sound pressure levels by integration of PSD levels with a 1 Hz/1 second resolution and a median was used to calculate hourly values over no less than 1,800 1-s values for that hour and converted to decibels (dB re 1 μPa). MANTA and PYPAM software calculates power spectral density (PSD) levels per minute (μPa²) within the hybrid milledecade frequency bands. <a href="https://cran.r-project.org/web/packages/PAMscapes/index.html" target="_blank">PAMscapes</a> was used to calculate the median for each hour within one-third octave bands. These values were then converted to 1-Hz resolution to match the wind model results by converting to pressure and dividing by the band width before converting back to sound spectrum levels in decibels (dB re 1 μPa/Hz).</p>
+<button onclick="document.getElementById(&#39;infoModal&#39;).close()">
+Close
+</button>
+
+</dialog>
+<button onclick="document.getElementById(&#39;infoModal2&#39;).showModal()">
+How does my sanctuary compare?
+</button>
+<dialog id="infoModal2">
+<p>No one soundscape is alike and we can use other sites in similar oceanographic settings (e.g. nearshore or offshore) to compare conditions. From 2018-2022, the U.S. National Oceanic and Atmospheric Administration (NOAA) and the U.S. Navy engaged in a multi-year effort to monitor underwater sound within the U.S. National Marine Sanctuary System, known <a href="https://sanctuaries.noaa.gov/science/monitoring/sound/sanctsound.html" target="_blank">Sanctuary SoundScape Monitoring Project</a>. Data collected during this dedicated period provide <a href="https://www.frontiersin.org/journals/marine-science/articles/10.3389/fmars.2021.719258/full" target="_blank">initial insights</a> on how soundscapes compare.</p>
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("A comparison of soundscapes. Curve in black represents current location." )}
+# Load and display an image with a caption
+knitr::include_graphics(("plot_sb01_Compare.jpg"))
+knitr::include_graphics(("plot_sb03_Compare.jpg"))
+```
+<button onclick="document.getElementById(&#39;infoModal2&#39;).close()">
+Close
+</button>
+</dialog>
+:::
+
+::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
+# **What are the latest conditions in ocean sound?**
+Soundscapes are dynamic, changing with season and annual differences in sources (wind, biologics, and human-activity). Comparing annual ocean sound levels provides insights on trends in ocean sound: **Are levels lower in the most recent year of monitoring?** Efforts to reduce noise are underway on global to local scales though vessel speed reduction strategies and engineering solutions, and these efforts may be be reflected in the annual data. Typically, a more focused analysis is necessary to tease apart the multiple drivers of ocean sound levels.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("**Annual comparison of ocean sound.**" ) }
+knitr::include_graphics(("plot_sb01_YearSPL.jpg"))
+knitr::include_graphics(("plot_sb03_YearSPL.jpg"))
+```
+:::
+
+::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
+# **How often is ocean sound above wind conditions?**
+If sound levels are above what is expected for wind, other sources are likely contributing to the soundscape. The percent of the time above wind lets us know how often a sound is present. The decibels above lets us know how much sound is added. It is best to look at time above within specific frequencies of interest. 
+
+100 Hz represents low-frequency ship noise. In many marine environments, ships are transiting the region for a variety of purposes (e.g. transporting goods, harvesting ocean resources, and carrying tourists). When these ships are transiting [noise is added to the soundscape](https://link.springer.com/article/10.1007/s10661-024-12497-2), particularly in the lower frequencies.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("" ) }
+knitr::include_graphics(("table_sb01_AboveWind.jpg"))
+knitr::include_graphics(("table_sb03_AboveWind.jpg"))
+```
+
+</dialog>
+<button onclick="document.getElementById(&#39;infoModal4&#39;).showModal()">
+Visualize the patterns
+</button>
+<dialog id="infoModal4">
+<p></p>
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("A comparison of soundscapes. Curve in black represents current location." )}
+# Load and display an image with a caption
+knitr::include_graphics(("plot_sb01_Exceed100.jpg"))
+knitr::include_graphics(("plot_sb03_Exceed100.jpg"))
+```
+<button onclick="document.getElementById(&#39;infoModal4&#39;).close()">
+Close
+</button>
+</dialog>
+
+:::
+
+::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
+# **How often do nearby ships contribute noise to the soundscape?**
+Only results from sites with AIS data in 10 km buffer included in this section.
+
+ **How much noise do nearby ships contribute to the soundscape?**
+ 
+:::
+
+::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
+# **How much do vessel speed reduction programs reduce ocean noise?**
+Only results from sanctuaries with an active VSR program analyzed for this section.
+:::
+
+::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
+# **When do biological sounds contribute to the soundscape?**
+Only results from sites with species detections included in this section.
+:::
+
+::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
+# **What are we learning?**
+We continue to discover even more from these ONMS ocean sound data. Collaborative partnerships help us gain key insights on sanctuary resources and conditions from ocean sound data by leveraging ecological and technological expertise. Here are a few recent examples:
+
+:::
