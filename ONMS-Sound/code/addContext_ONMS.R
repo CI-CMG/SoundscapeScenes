@@ -20,8 +20,8 @@ library(grid)
 #INPUT PARAMS ####
 DC = Sys.Date()
 project = "ONMS"
-site = "pm01" # nrs11 mb02"
-site1 =  "pm01" #cbnrs11 is weird...
+site = "sb01" # nrs11 mb02"
+site1 =  "sb01" #cbnrs11 is weird...
 fqIn = "TOL_125" 
 ab = 70 # threshold for above frequency in
 fqIn2 = "TOL_100" # no wind model for 125 Hz- ugh!!!
@@ -153,7 +153,8 @@ names(summary2)
 p2 = ggplot(summary2, aes(x = year, y = n, fill = as.factor(Season))) +
   geom_col(position = "dodge", width = .3) +  # Use dodge to separate bars for each year within the same month
   labs(
-    caption = paste0(toupper(site), " has ", udays, 
+    title = "monitoring effort by season",
+    caption  = paste0(toupper(site), " has ", udays, 
                      " unique days: ", as.character(st), " to ", as.character(ed)),
     x = "",
     y = "Hours",
@@ -284,7 +285,7 @@ p = ggplot() +
   # Wind model values
   geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == windUpp,], aes(x = variable, y = value), color = "black",  linewidth = 1) +
   geom_line(data = mwindInfo[as.character(mwindInfo$windSpeed) == windLow,], aes(x = variable, y = value), color = "black",  linewidth = 1) +
-  scale_x_log10(labels = label_number(),limits = (c(10,fqupper))) +  # Log scale for x-axis
+   scale_x_log10(labels = label_number(),limits = (c(10,fqupper))) +  # Log scale for x-axis
 
   # Add vertical lines at FQstart
   geom_vline(data = FOIs, aes(xintercept = FQstart, color = Label), linetype = "dashed", color = "black",linewidth = .5) +
@@ -298,17 +299,17 @@ p = ggplot() +
   theme(legend.position = "top",
         plot.title = element_text(size = 16, face = "bold", hjust = 0)) +  # This line removes the legend
   labs(
-    title = paste0("Soundscape Overview at ", toupper(site), ", a ", 
+    title = paste0("Soundscape Overview \n", toupper(site), ", a ", 
                    tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
-    subtitle = paste0( "data summarized from ", st, " to ", ed, "\n vertical lines indicate frequencies for sounds of interest in this soundscape" ),
-    caption = paste0("black lines are expected wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
+    #subtitle = paste0("data summarized from ", st, " to ", ed, "\n vertical lines indicate frequencies for sounds of interest in this soundscape" ),
+    caption = paste0("vertical lines indicate frequencies for sounds of interest in this soundscape \n black lines are expected wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
     x = "Frequency Hz",
     y = expression(paste("Sound Levels (dB re 1 ", mu, " Pa/Hz)" ) )
   )
 
 separator <- grid.rect(gp = gpar(fill = "black"), height = unit(2, "pt"), width = unit(1, "npc"))
 # arranged_plot = grid.arrange(p, separator, l, heights =c(4, 0.05, 0.8))
-arranged_plot = grid.arrange(p, separator, p2, heights =c(4, 0.1, 2))
+arranged_plot = grid.arrange(p, separator, p2, heights =c(4, 0.1, .8))
 ## save: seasonal spectra ####
 ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_SeasonalSPL.jpg"), plot = arranged_plot, width = 10, height = 10, dpi = 300)
 
@@ -361,6 +362,8 @@ p = ggplot() +
   
   #median TOL values
   geom_line(data = mallData[mallData$Quantile == "50%",], aes(x = Frequency, y = SoundLevel, color = Year), linewidth = 2) +
+  geom_rect(data = FOIs, aes(xmin = FQstart, xmax = FQend, ymin = -Inf, ymax = Inf), 
+            fill = "gray", alpha = 0.2)+  # Adjust alpha for transparency
   #scale_color_manual(values = c("Winter" = "#56B4E9", "Spring" = "#009E73", "Summer" = "#CC79A7", "Fall" = "#E69F00")) +
   #shade for 25/75 TOL values... coming soon
   #add wind model values
@@ -381,12 +384,12 @@ p = ggplot() +
   theme(legend.position = "top",
         plot.title = element_text(size = 16, face = "bold", hjust = 0)) +  # This line removes the legend
   labs(
-    title =  paste0(toupper(site), ", a ", 
+    subtitle =  paste0(toupper(site), ", a ", 
                     tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
-    subtitle = paste0( "Data summarized from ", st, " to ", ed),
-    caption  = paste0("black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s] \n",
-                     "Vertical lines indicate frequencies for sounds of interest in this soundscape",
-                     "\n Seasonality = ", sidx),
+    #subtitle = paste0( "Data summarized from ", st, " to ", ed),
+    caption  = paste0("Vertical lines indicate frequencies for sounds of interest in this soundscape \n",
+                      "black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s] ",
+                      "\n Seasonality = ", sidx),
     x = "Frequency Hz",
     y = expression(paste("Sound Levels (dB re 1 ", mu, " Pa/Hz)" ) )
   )
@@ -404,6 +407,7 @@ summary$dy = round(summary$n/ 24)
 p1 = ggplot(summary, aes(x = month, y = n, fill = as.factor(year))) +
   geom_col(position = "dodge", width = .3) +  # Use dodge to separate bars for each year within the same month
   labs(
+    title = "monitoring effort by year",
     caption = paste0(toupper(site), " has ", udays, 
                      " unique days: ", as.character(st), " to ", as.character(ed)),
     x = "",
@@ -422,7 +426,7 @@ p1 = ggplot(summary, aes(x = month, y = n, fill = as.factor(year))) +
 p1
 separator <- grid.rect(gp = gpar(fill = "black"), height = unit(2, "pt"), width = unit(1, "npc"))
 # arranged_plot = grid.arrange(p, separator, l, heights =c(4, 0.05, 0.8))
-pYear = grid.arrange(p, separator, p1, heights =c(4, 0.1, 1.5))
+pYear = grid.arrange(p, separator, p1, heights =c(4, 0.1, .8))
 ## save: yearly spectra ####
 ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_YearSPL.jpg"), plot = pYear, width = 10, height = 6, dpi = 300)
 

@@ -1,6 +1,6 @@
 ---
 title: "Soundscape Inventory Report"
-author: "Stellwagen Bank National Marine Sanctuary"
+author: "U.S. National Marine Sanctuary"
 date: "`r Sys.Date()`"
 output: 
   html_document: 
@@ -41,24 +41,27 @@ siteDetails <- siteDetails[, colSums(is.na(siteDetails)) != nrow(siteDetails)]
 ```
 
 ::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
-# **What is ocean sound?**
-Ocean sound refers to the collection of acoustic energy present in marine environments, encompassing a variety of sources, including sounds from marine animals, geophysical noise from waves, wind, rain, and human generated noise from shipping, sonar, and offshore construction. This collection of sound at a given place and time is often called a soundscape. Monitoring ocean soundscapes provides key insight to understanding ecosystem dynamics, detecting environmental changes, and managing the impacts of noise pollution on marine organisms. Learn more about ocean sounds at [Discovery of Sound in the Sea](https://dosits.org/).
+# **What is ocean sound?** 
+Ocean sound refers to the collection of acoustic energy present in marine environments, encompassing a variety of sources, including sounds from marine animals, geophysical noise from waves, wind, rain, and human generated sounds from shipping, sonar, and offshore construction. This collection of sound at a given place and time is often called a soundscape. Monitoring ocean soundscapes provides key insight to understanding ecosystem dynamics, detecting environmental changes, and managing the impacts of noise pollution on marine organisms. Learn more about ocean sounds at [Discovery of Sound in the Sea](https://dosits.org/).
 
-**Why do we care?** Ocean sound is critical for the survival of many marine animals because it is a primary means of communication, orientation and navigation, finding food, avoiding predators, and choosing mates. As such, human activities that produce underwater sounds have the potential to negatively impact animals by reducing their ability to hear prey, predators, and each other. **US National marine sanctuaries** are home to many acoustically active marine animals and understanding the presence and impacts of noise is a conservation priority. Further, the occurrence and types of sounds present offer key insights on animal presence, species behaviors, human-use patterns, and changing ocean conditions.
+**Why do we care?** Ocean sound is critical for the survival of many marine animals because it is a primary means of communication, orientation and navigation, finding food, avoiding predators, and choosing mates. As such, human activities that produce underwater sounds have the potential to negatively impact animals by reducing their ability to hear prey, predators, and each other. **U.S. national marine sanctuaries** are [home to many acoustically active marine animals](https://sanctuaries.noaa.gov/education/teachers/ocean-sound/) and understanding the presence and impacts of noise is a conservation priority. Further, the occurrence and types of sounds present offer key insights on animal presence, species behaviors, human-use patterns, and changing ocean conditions.
+
+**Where are we listening?** NOAA's Office of National Marine Sanctuaries (ONMS) maintains a nationally coordinated underwater sound monitoring network, known as [ONMS Sound](https://sanctuaries.noaa.gov/science/monitoring/sound/). ONMS sound works with partners to monitor ocean sound off the US East, West, and Gulf Coasts and in the Pacific Islands region. Ocean Sound monitoring sites are placed in strategic locations within sanctuary boundaries. Data from the sound monitoring sites are available through the NOAA National Centers for Environmental Information's Passive Acoustic Archive. Explore the ONMS sound and partner monitoring sites [here](https://www.ncei.noaa.gov/maps/passive-acoustic-data/).
+
+**Purpose of a soundscape inventory report** This report provides regular updates on ONMS ocean sound monitoring efforts. The report includes basic summary graphics and tables to understand the soundscape and provide indicators of change. The report represents analyses that are maintained by ONMS sound. If partners are maintaining analyses, those results are also included (e.g. [species detections by NMFS](https://apps-nefsc.fisheries.noaa.gov/pacm/#/)). We also highlight key insights from specific dedicated studies that used these data.
 :::
 
 ::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
-# **When, where, & why are we listening?**
-NOAA's Office of National Marine Sanctuaries (ONMS) maintains a nationally coordinated underwater sound monitoring network across the National Marine Sanctuary System, known as [ONMS Sound](https://sanctuaries.noaa.gov/science/monitoring/sound/). ONMS sound works with partners to monitor off the US East Coast, in the Gulf of Mexico, off the West Coast and in the Pacific Islands region. Ocean Sound monitoring sites are located in strategic locations within sanctuary boundaries and records continuously. Audio recordings and standardized sound measurements are available through the NOAA National Centers for Environmental Information's Passive Acoustic Archive. Explore the acoustic monitoring sites [here](https://www.ncei.noaa.gov/maps/passive-acoustic-data/).
-
+# **Ocean sound monitoring in `r params$author`**
 The [**`r params$author`**](https://stellwagen.noaa.gov/) is a wild ocean place near an urban world, sits east of Boston, Massachusetts between Cape Ann and Cape Cod. Historically important as a fishing ground, New England's only national marine sanctuary now reigns as a premier whale watching destination and continues to support commercial and recreational fishing.
 
-**Ocean sound monitoring** within **`r params$abrv`** has a long history of underwater acoustic monitoring with a focus on monitoring of [marine mammal](https://www.frontiersin.org/journals/remote-sensing/articles/10.3389/frsen.2022.970401/full),
-including the endangered North Atlantic Right Whale presence. As well as [noise reduction](https://link.springer.com/article/10.1007/s10661-024-12497-2) during [vessel speed reduction programs](https://www.fisheries.noaa.gov/national/endangered-species-conservation/reducing-vessel-strikes-north-atlantic-right-whales#current-vessel-speed-restrictions).
+The **history of ocean sound monitoring ** within `r params$abrv` began with a focus [marine mammal sounds](https://www.frontiersin.org/journals/remote-sensing/articles/10.3389/frsen.2022.970401/full),
+including the endangered North Atlantic Right Whales.[Noise reduction](https://link.springer.com/article/10.1007/s10661-024-12497-2) during [vessel speed reduction programs](https://www.fisheries.noaa.gov/national/endangered-species-conservation/reducing-vessel-strikes-north-atlantic-right-whales#current-vessel-speed-restrictions) is also well studied in this region.
 
-**Current ocean sound monitoring and analysis** is maintained at four sites within **`r params$abrv`**. Two sites (SB01,SB02,SB03) are located more inshore, capturing more local vessel activity and sounds from nearshore species. The one offshore sites (NRS09) capture patterns in migrating whales and transiting commercial vessel traffic and is part of the [US Ocean Noise Reference Station Network](https://www.pmel.noaa.gov/acoustics/noaanps-ocean-noise-reference-station-network).
+**Current ocean sound monitoring** is maintained at four sites within **`r params$abrv`**. Three sites (SB01,SB02,SB03) are located more inshore, capturing more local vessel activity and sounds from nearshore species. One offshore sites (NRS09) captures patterns in migrating whales and transiting commercial vessel traffic and is part of the [US Ocean Noise Reference Station Network](https://www.pmel.noaa.gov/acoustics/noaanps-ocean-noise-reference-station-network).
 
 **Summary of ocean sound monitoring sites**
+<div style="border-top: 1px solid black; margin: 10px 0;"></div>
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, out.width="25%", out.height="25%"}
 siteDetails %>% 
   kable("html") %>% 
@@ -68,18 +71,15 @@ siteDetails %>%
 :::
 
 ::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
-# **What is a soundscape?**
-Soundscapes are complex -- representing all the types of sounds present at a given time and location and influenced by the weather. **How do we visualize this information?** Let's start with the main contributions to a soundscape: the colored lines represent **seasonal differences**, vertical lines indicate different sound **sources of interest** and what frequency(s) represents the source, and the black lines bound the soundscape to **expected range** based on when only wind noise is present. We can track these different contributions over time to understand how soundscape are changing.  We can also compare across locations.
-
+# **What is the soundscape in `r params$abrv` ?**
+A [soundscape](https://dosits.org/glossary/soundscape/) includes all the different sounds present at a given time and location. **How do we visualize this information?** One way is to indicate the main **sound contributors** on a frequency by sound level graphic, known as spectral plot. The **seasonal differences** are shown as the colored lines. The **known sources of interest** in this soundscape are indicated by vertical lines and shaded areas at specific frequency(s).  **Wind noise** occurs within an expected range and is represented the black lines. We can track these different contributions to understand how a soundscape is changing. We can also compare across locations.
+<div style="border-top: 1px solid black; margin: 10px 0;"></div>
 ```{r, echo=FALSE, warning=FALSE, message = FALSE, fig.cap=paste("**A visualization of ocean sound.** Seasonal summary of measured sound levels (colored lines) shown as median hourly values over all available data. Vertical lines indicate representative frequencies for different sound sources. The bottom bar shows how the data are distributed in the different wind categories: low < 5 m/s, med 5-10 m/s, high >10 m/s. Dotted lines are modeled wind noise at this depth based on[Hildebrand et al 2021](https://www.google.com/url?q=https://pubs.aip.org/asa/jasa/article/149/6/4516/1059383&sa=D&source=docs&ust=1739833923518127&usg=AOvVaw24yaJ1b4fPnOnoYFke3nuD)." )}
 knitr::include_graphics(("plot_sb01_SeasonalSPL.jpg") )
 knitr::include_graphics(("plot_sb03_SeasonalSPL.jpg") )
 ```
-
 <button onclick="document.getElementById(&#39;infoModal&#39;).showModal()">
-
 How was this calculated?
-
 </button>
 
 <dialog id="infoModal">
