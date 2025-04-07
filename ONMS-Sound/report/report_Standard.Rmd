@@ -72,7 +72,7 @@ siteDetails %>%
 
 ::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
 # **What is the soundscape in `r params$abrv` ?**
-A [soundscape](https://dosits.org/glossary/soundscape/) includes all the different sounds present at a given time and location. **How do we visualize this information?** One way is to indicate the main **sound contributors** on a frequency by sound level graphic, known as spectral plot. The **seasonal differences** are shown as the colored lines. The **known sources of interest** in this soundscape are indicated by vertical lines and shaded areas at specific frequency(s).  **Wind noise** occurs within an expected range and is represented the black lines. We can track these different contributions to understand how a soundscape is changing. We can also compare across locations.
+A [soundscape](https://dosits.org/glossary/soundscape/) includes all the different sounds present at a given time and location. Soundscapes are dynamic, changing with season and annual differences in sources (wind, biologics, and human-activity). **How do we visualize this information?** One way is to indicate the main **sound contributors** on a frequency by sound level graphic, known as spectral plot. The **seasonal differences** are shown as the colored lines. The **known sources of interest** in this soundscape are indicated by vertical lines and shaded areas at specific frequency(s).  **Wind noise** occurs within an expected range and is represented the black lines. We can track these different contributions to understand how a soundscape is changing. We can also compare across locations.
 <div style="border-top: 1px solid black; margin: 10px 0;"></div>
 ```{r, echo=FALSE, warning=FALSE, message = FALSE, fig.cap=paste("**A visualization of ocean sound.** Seasonal summary of measured sound levels (colored lines) shown as median hourly values over all available data. Vertical lines indicate representative frequencies for different sound sources. The bottom bar shows how the data are distributed in the different wind categories: low < 5 m/s, med 5-10 m/s, high >10 m/s. Dotted lines are modeled wind noise at this depth based on[Hildebrand et al 2021](https://www.google.com/url?q=https://pubs.aip.org/asa/jasa/article/149/6/4516/1059383&sa=D&source=docs&ust=1739833923518127&usg=AOvVaw24yaJ1b4fPnOnoYFke3nuD)." )}
 knitr::include_graphics(("plot_sb01_SeasonalSPL.jpg") )
@@ -112,7 +112,7 @@ Close
 
 ::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
 # **What are the latest conditions in ocean sound?**
-Soundscapes are dynamic, changing with season and annual differences in sources (wind, biologics, and human-activity). Comparing annual ocean sound levels provides insights on trends in ocean sound: **Are levels lower in the most recent year of monitoring?** Efforts to reduce noise are underway on global to local scales though vessel speed reduction strategies and engineering solutions, and these efforts may be be reflected in the annual data. Typically, a more focused analysis is necessary to tease apart the multiple drivers of ocean sound levels.
+Comparing annual ocean sound levels provides insights on trends in ocean sound. Using spectral plots, we can evaluate what frequencies are increasing or decreasing in recent years.  For example, in the ship noise frequencies, **are sound levels lower in the most recent year of monitoring?** Efforts to reduce noise are underway on global to local scales, and these efforts may be be reflected in the annual data. Typically, a more focused analysis is necessary to tease apart the multiple drivers of changing ocean sound levels.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("**Annual comparison of ocean sound.**" ) }
 knitr::include_graphics(("plot_sb01_YearSPL.jpg"))
@@ -121,11 +121,11 @@ knitr::include_graphics(("plot_sb03_YearSPL.jpg"))
 :::
 
 ::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
-# **How often is ocean sound above wind conditions?**
-If sound levels are above what is expected for wind, other sources are likely contributing to the soundscape. The percent of the time above wind lets us know how often a sound is present. The decibels above lets us know how much sound is added. It is best to look at time above within specific frequencies of interest. 
+# **How often is ocean sound above wind noise?**
+If sound levels in a frequency of interest are above what is expected for wind noise, other sources are contributing to the soundscape. The percent of the time above wind noise tell us how often a sound contributes to the soundscape. The decibels above tell us  how much sound is added. 
 
 100 Hz represents low-frequency ship noise. In many marine environments, ships are transiting the region for a variety of purposes (e.g. transporting goods, harvesting ocean resources, and carrying tourists). When these ships are transiting [noise is added to the soundscape](https://link.springer.com/article/10.1007/s10661-024-12497-2), particularly in the lower frequencies.
-
+<div style="border-top: 1px solid black; margin: 10px 0;"></div>
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=paste("" ) }
 knitr::include_graphics(("table_sb01_AboveWind.jpg"))
 knitr::include_graphics(("table_sb03_AboveWind.jpg"))

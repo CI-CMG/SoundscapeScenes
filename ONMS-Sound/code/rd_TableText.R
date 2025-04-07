@@ -1,4 +1,5 @@
 
+library(xlsx)
 
 site  = c("sb01","sb03")
 inDir = "F:\\CODE\\GitHub\\SoundscapeScenes\\ONMS-Sound\\context\\"
@@ -13,10 +14,9 @@ siteInfo = siteInfo[!is.na(siteInfo$`NCEI ID`), ]
 
 siteDetails = as.data.frame ( read.xlsx(metaFile, sheetIndex = "SB") )
 siteDetails = siteDetails[rowSums(is.na(siteDetails)) != ncol(siteDetails), ]
-siteDetails = siteDetails[rowSums(is.na(siteDetails)) != ncol(siteDetails), ]
 siteDetails = siteDetails[, colSums(is.na(siteDetails)) != nrow(siteDetails)]
 
 siteText = as.data.frame ( read.xlsx(metaFile, sheetIndex = "Standard Report Text") )
 siteText = siteText[rowSums(is.na(siteText)) != ncol(siteText), ]
-siteText = siteText[, 1:3 ]
+siteText = siteText[, colSums(is.na(siteText)) != nrow(siteText)]
 

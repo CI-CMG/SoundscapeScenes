@@ -34,10 +34,3 @@ siteText = siteText[, colSums(is.na(siteText)) != nrow(siteText)]
 `siteText[1,1]` 
 
 :::
-
-
-```{r echo=FALSE, results="asis"}
-cat("::: {style='border: 1px solid black; padding: 10px; margin-bottom: 20px;'}\n")
-cat("# **What is ocean sound?**\n")
-cat(siteText[1,1], "\n")
-cat(":::\n")

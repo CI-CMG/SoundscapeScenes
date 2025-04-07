@@ -8,6 +8,10 @@ rm(list=ls())
 library(tidyr)
 library(dplyr)
 library(rmatio)
+library(ggplot2)
+library(reshape)
+library(gridExtra)
+library(grid)
 
 # PARAMS ####
 ver = "ec100"
@@ -63,9 +67,6 @@ ggplot(tal_complete, aes(x = "", y = PerTime, fill = as.factor(ClusterIDNumber))
         axis.ticks = element_blank(), 
         panel.grid = element_blank())  # Remove grid lines
 
-## TILE FOR CLUSTERS ####
-
-
 ## SPECTRA FOR CLUSTERS ####
 inFilesS = list.files( dirClus, pattern = "*_types_all.mat$", full.names = T)
 inFilesS = inFilesS[grepl(ver,inFilesS) ]
@@ -98,7 +99,6 @@ for (ii in 1:length(inFilesS)) {
     guides(color = guide_legend(nrow = 3)) 
   print(p1) 
   
-  
   tal_site = tal_complete[tal_complete$site ==site,]
     
   p2 = ggplot(tal_site, aes(x = "", y = PerTime, fill = as.factor(ClusterIDNumber))) +
@@ -118,6 +118,24 @@ for (ii in 1:length(inFilesS)) {
   
   ggsave(filename = paste0(dirClus, "\\plot_", tolower(site), "_ClusterSpectra.jpg"), plot = arranged_plot, width = 10, height = 10, dpi = 300)
   
-  ## tile  
+  ## TILE FOR CLUSTERS ####
+  names(clustAll)
+  dataALLm = reshape2 :: melt(clustAll, id.vars = c("dateTime", "site"), measure.vars = c("ClusterIDNumber" ))
+  names(dataALLm)
+    colnames(daySum) = c("Day","variable","total","samples")
+  daySum = as.data.frame(daySum)
+  daySum$Day2 = as.Date(daySum$Day)
+  daySum$perSample = (as.numeric(as.character(daySum$total))/as.numeric(as.character(daySum$samples)))*100
+  pDay = ggplot(daySum, aes(Day2, variable, fill= as.numeric(perSample))) + 
+    geom_tile() +
+    scale_fill_gradient(low="white", high="blue") +
+    #scale_y_discrete(labels = c("Anthropogenic (4)","Baleen whale (24)","Bowhead (157)","Beluga (88)", "Bearded seal (136)","Ribbon seal (1)",
+    #"Ice (100)","Walrus (155)","Unknown Biological(149)","Unknown (78)"))+
+    labs(title = "Summary of Identified Sounds by Day at Bering Strait", fill = "% Samples") +
+    xlab("") +
+    ylab("Sound Source (days with calls)")
+  pDay
+  
+  
   
 }
