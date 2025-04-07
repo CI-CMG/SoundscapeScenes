@@ -63,6 +63,9 @@ ggplot(tal_complete, aes(x = "", y = PerTime, fill = as.factor(ClusterIDNumber))
         axis.ticks = element_blank(), 
         panel.grid = element_blank())  # Remove grid lines
 
+## TILE FOR CLUSTERS ####
+
+
 ## SPECTRA FOR CLUSTERS ####
 inFilesS = list.files( dirClus, pattern = "*_types_all.mat$", full.names = T)
 inFilesS = inFilesS[grepl(ver,inFilesS) ]
