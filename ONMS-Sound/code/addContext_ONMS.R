@@ -428,9 +428,9 @@ for (uu in 1:length(ONMSsites)) {
   p1
   separator <- grid.rect(gp = gpar(fill = "black"), height = unit(2, "pt"), width = unit(1, "npc"))
   # arranged_plot = grid.arrange(p, separator, l, heights =c(4, 0.05, 0.8))
-  pYear = grid.arrange(p, separator, p1, heights =c(4, 0.1, 1.5))
+  pYear = grid.arrange(p, separator, p1, heights =c(4, 0.1, 1))
   ### save: plot yearly spectra ####
-  ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_YearSPL.jpg"), plot = pYear, width = 10, height = 6, dpi = 300)
+  ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_YearSPL.jpg"), plot = pYear, width = 10, height = 10, dpi = 300)
   
   ## CONVERT ALL DATA TO 1 Hz  ####
   gpsBB = gps
