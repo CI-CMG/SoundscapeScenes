@@ -555,8 +555,7 @@ for (uu in 1:length(ONMSsites)) {
   gpsFQ$Windthres[gpsFQ$Exceed > ab2] = "above"
   
   # above 
-  #names(gpsFQ)
-  rm(seasonalNE)
+
   seasonalNE = gpsFQ %>%
     mutate(Date = as.Date(UTC)) %>%
     group_by(Season, yr) %>%
@@ -575,8 +574,26 @@ for (uu in 1:length(ONMSsites)) {
   seasonalNE = as.data.frame( seasonalNE )
   
   # ERROR ####
-  seasonalNE = seasonalNE %>%
-    mutate(Season = factor(Season, levels = c("Winter", "Spring", "Summer", "Fall")))
+  
+  sidx = siteInfo$Seasonality
+  #put in alphetical order so plots line up!!!
+  if ( length(sidx) == 0 ) {
+    seasonalNE = seasonalNE %>%
+      mutate(Season = factor(Season, levels = c("Winter", "Spring", "Summer", "Fall")))
+  }else if  ( sidx == "other") {
+    seasonalNE = seasonalNE %>%
+      mutate(Season = factor(Season, levels = c("Early", "Peak", "Late-Upwelling", "Non")))
+ 
+  }else if  ( sidx == "upwelling") {
+    seasonalNE = seasonalNE %>%
+      mutate(Season = factor(Season, levels = c("Upwelling", "Winter", "Post-Upwelling")))
+  
+  }else {
+    seasonalNE = seasonalNE %>%
+      mutate(Season = factor(Season, levels = c("Winter", "Spring", "Summer", "Fall")))
+  }
+  
+
   
   seasonalTime_wide = seasonalNE %>%
     select(Season, yr, percent_above) %>%  
