@@ -139,9 +139,12 @@ output$Start_Date = as.Date(output$Start_Date, format = "%Y-%m-%d")
 output$End_Date = as.Date(output$End_Date, format = "%Y-%m-%d")
 
 # ADD INFO from lookup ####
-colnames(lookup)
-matched_data = merge(output, lookup, by.x = "Site", by.y = "NCEI ID", all.x = TRUE)
-# matched_data = output %>%   left_join(lookup, by = c("Site" = "NCEI ID"))
+colnames(lookup)[5] = "NCEI"
+#Sites from archive that are not found in lookup$NCEI ID``.
+setdiff(unique(output$Site), unique(lookup$NCEI))
+setdiff( unique(lookup$NCEI), unique(output$Site) )
+matched_data = merge(output, lookup, by.x = "Site", by.y = "NCEI", all.x = TRUE)
+# matched_data = output %>% left_join(lookup, by = c("Site" = "NCEI ID"))
 output$Region = matched_data$Region
 output$Identifer = matched_data$`Common Name/Identifers`
 output$Description = matched_data$`Site Description/Driver for Monitoring Location Choice`
@@ -149,12 +152,39 @@ output$Duration = difftime( output$End_Date, output$Start_Date,"days")
 colnames(output)
 #remove non-monitoring sites
 outputT = output[!is.na(output$Region),] 
-outputTt = outputT[,c(1,10, 9, 3:6, 13, 7:8, 11:12) ]
+#outputTt = outputT[,c(1,10, 9, 3:6, 13, 7:8, 11:12) ]
 
-save(outputTt, file = paste0(outputDir, "\\data_gantt_ONMS_gantt_", DC, ".Rda") )
-write.csv(outputTt, file = paste0(outputDir, "\\data_gantt_ONMS_gantt_", DC, ".csv") )
-colnames(outputTt)
+save(outputT, file = paste0(outputDir, "\\data_gantt_ONMS_gantt_", DC, ".Rda") )
+write.csv(outputT, file = paste0(outputDir, "\\data_gantt_ONMS_gantt_", DC, ".csv") )
+colnames(outputT)
 
+# GANTT PLOT  ####
+projectN = onms
+uColors = unique(outputT$Instrument)
+if (projectN == "onms"){
+  instrument_colors <- c(
+    "SoundTrap 500" = "#88CCEE",  
+    "SoundTrap 600" = "#CC6677",#88CCEE",  
+    "SoundTrap 300" = "#44AA99", 
+    "HARP" =          "#DDCC77") #DDCC77
+}
+
+# geom_tile option 
+colnames(outputT)
+pT = ggplot(outputT, aes(y = Site, x = Start_Date, xend = End_Date)) +
+  geom_tile(aes(x = Start_Date, width = as.numeric(End_Date - Start_Date), fill = Instrument), 
+            color = "black", height = 0.4) +  # Fill color by Instrument and outline in black
+  scale_fill_manual(values = instrument_colors) +  # Use specific colors for instruments
+  labs(x = "", y = "", title = paste0(toupper(projectN),  " - Ocean Sound Monitoring Data Summary"),
+       subtitle = paste0("NCEI google cloud platform (", typ, ") as of ", format(Sys.Date(), "%B %d, %Y"))) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+        axis.text.y = element_text(angle = 10, size = 12))
+pT
+ggsave(filename = paste0(outputDir, "/gantt_ONMS_", DC, ".jpg"), plot = pT, width = 8, height = 6, dpi = 300)
+
+
+# MAP DATA ####
 #reformat for per site- total recordings 
 outputMap =  as.data.frame(
   outputT %>%
@@ -178,29 +208,8 @@ outputMap2a = na.omit(outputMap2a)
 save(outputMap2a, file = paste0(outputDir, "\\map_ONMS_map_", DC, ".Rda") )
 write.csv( outputMap2a, file = paste0(outputDir, "\\map_ONMS_map_", DC, ".csv") )
 
-# GANTT PLOT  ####
-uColors = unique(output$Instrument)
-if (projectN == "onms"){
-  instrument_colors <- c(
-    "SoundTrap 500" = "#88CCEE",  
-    "SoundTrap 600" = "#CC6677",#88CCEE",  
-    "SoundTrap 300" = "#44AA99", 
-    "HARP" =          "#DDCC77") #DDCC77
-}
 
 
-# geom_tile option 
-pT = ggplot(output, aes(y = Site, x = Start_Date, xend = End_Date)) +
-  geom_tile(aes(x = Start_Date, width = as.numeric(End_Date - Start_Date), fill = Instrument), 
-            color = "black", height = 0.4) +  # Fill color by Instrument and outline in black
-  scale_fill_manual(values = instrument_colors) +  # Use specific colors for instruments
-  labs(x = "", y = "", title = paste0(toupper(projectN),  " - Ocean Sound Monitoring Data Summary"),
-       subtitle = paste0("NCEI google cloud platform (", typ, ") as of ", format(Sys.Date(), "%B %d, %Y"))) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
-        axis.text.y = element_text(angle = 10, size = 12))
-pT
-ggsave(filename = paste0(outputDir, "/gantt_ONMS_", DC, ".jpg"), plot = pT, width = 8, height = 6, dpi = 300)
 
 # Assuming your data frame is named 'data'
 # Convert the data frame to an sf object for mapping

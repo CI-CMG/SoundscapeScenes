@@ -3,8 +3,8 @@ rm(list=ls())
 #INPUT PARAMS ####
 DC = Sys.Date()
 project = "ONMS"
-site = "sb03" # nrs11 mb02"
-site1 =  "sb03" #cbnrs11 is weird...
+site = "oc02" # "sb03" nrs11 mb02"
+site1 =  "oc02" #cbnrs11 is weird...
 AISUpp = 5 
 AISLow = 2
 windUpp = 22.6 #which wind model result to show on plot

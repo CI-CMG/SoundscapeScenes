@@ -29,8 +29,9 @@ siteText = as.data.frame ( read.xlsx(metaFile, sheetIndex = "Standard Report Tex
 siteText = siteText[rowSums(is.na(siteText)) != ncol(siteText), ]
 siteText = siteText[, colSums(is.na(siteText)) != nrow(siteText)]
 ```
+
 ::: {style="border: 1px solid black; padding: 10px; margin-bottom: 20px;"}
 # **What is ocean sound?**
-`siteText[1,1]` 
 
+`siteText[1,1]`
 :::

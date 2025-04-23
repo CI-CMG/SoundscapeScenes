@@ -7,8 +7,8 @@
 # adds wind estimate from PAMscapes for any new data
 
 # outputs hourly TOLs values with wind speed and list of files processed
-
 rm(list=ls()) 
+devtools::install_github('TaikiSan21/PAMscapes')
 library(PAMscapes)
 library(lubridate)
 library(dplyr)
@@ -18,9 +18,8 @@ library(xlsx)
 
 # SET UP PARAMS ####
 DC = Sys.Date()
-site  = "MB02" #MB02
+site  = "OC02" #MB02
 site = tolower(site) # "mb01"
-
 dirSS = "F:\\SanctSound" # SANCTSOUND
 dirGCP = paste0( "F:/ONMS/", site,"/") #NCEI GCP 
 outDir =  "F:\\CODE\\GitHub\\SoundscapeScenes\\ONMS-Sound\\" 
@@ -37,6 +36,7 @@ lookup = as.data.frame( lookup[!apply(lookup, 1, function(row) all(is.na(row))),
 siteInfo = lookup[lookup$`NCEI ID` == site,]
 siteInfo = siteInfo[!is.na(siteInfo$`NCEI ID`), ]
 siteInfo
+
 # CHECK FOR PROCESSED FILES #### 
 pFile = list.files(path = (outDirP), pattern = paste0("filesProcesed_",site), full.names = T, recursive = T)
 if (length(pFile) > 0 ) {
@@ -64,12 +64,17 @@ if (length(pFile) > 0 ) {
 }
 
 ## SanctSound FILES - ERDAP ####
+#gsutil -m rsync -r gs://noaa-passive-bioacoustic/sanctsound/products/sound_level_metrics/oc02 F:/SanctSound/OC02_02/metrics
+
 # NOTE- might need to change these in some of the files 31_5 to 31.5 and UTC with : not _
 inFiles = list.files(path = dirSS, pattern = toupper(site), full.names = T, recursive = T)
 filesTOL = inFiles[grepl("TOL_1h", inFiles)] 
 inFiles = filesTOL[!grepl("/analysis/", filesTOL)] 
 inFiles = inFiles[!grepl("1h.nc", inFiles)] 
+inFiles = inFiles[!grepl("xml", inFiles)] 
+inFiles = inFiles[!grepl("json", inFiles)] 
 inFiles = inFiles[!basename(inFiles) %in% processedFiles]
+inFiles = inFiles[!grepl("1h.nc", inFiles)] 
 cat("processing ", length(inFiles), "new files")
 sData = NULL
 if (length(inFiles) > 0 ) {
@@ -97,6 +102,7 @@ if (length(inFiles) > 0 ) {
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/pm01 F:/ONMS/pm01
 # gsutil -m rsync -r gs://noaa-passive-bioacoustic/onms/products/sound_level_metrics/pm02 F:/ONMS/pm02
 
+
 inFiles = list.files(dirGCP, pattern = "MinRes", recursive = T, full.names = T)
 inFiles = inFiles[!grepl(".png",inFiles) ]
 inFiles = inFiles[!grepl(".csv",inFiles) ]
@@ -118,20 +124,25 @@ if (length(inFiles) > 0 ) {
   cDatah = binSoundscapeData(cData, bin = "1hour", method = c("median") )
 }
 
+cDatah$yr  = year(cDatah$UTC)
+cDatah$mth = month(cDatah$UTC)
+cDatah$site = site
+
 ## COMBINE DATA ####
-if( length(sData) == 0 & length(cData)==0 ){ # No new files
+if( length(sData) == 0 & length(cData) == 0 ){ # No new files
   
   cat("No new files to process...") 
   #nothing new saved
   
 } else if ( length(sData) > 0 & length(aData) == 0 ) { 
-  
-  #SanctSound + ONMS data but no processed data 
+  cat("SanctSound + ONMS data but no processed data....")
+
   aData = NULL  
   sData$Latitude  = cDatah$Latitude[1]
   sData$Longitude = cDatah$Longitude[1]
   cData_mismatched = setdiff(colnames(cDatah), colnames(sData))
   cData_cleaned = cDatah[, !colnames(cDatah) %in% cData_mismatched]
+  colnames ( cData_cleaned )
   cData_cleaned = cData_cleaned[, colnames(sData)]
   aData = rbind(aData, cData_cleaned, sData)
   
@@ -139,26 +150,34 @@ if( length(sData) == 0 & length(cData)==0 ){ # No new files
   save(aData, file = paste0(outDirP, "data_", tolower(site), "_HourlySPL_", DC, ".Rda") )
   
   #SAVE FILES PROCESSED ####
+  aData$Latitude  = as.numeric( as.character( siteInfo$Latitude ))
+  aData$Longitude = as.numeric( as.character(siteInfo$Longitude ))
+  
   processedFiles  = c(basename(inFilesS), basename(inFiles)) 
   save(processedFiles, file = paste0(outDirP, "filesProcesed_", tolower(site), "_HourlySPL.Rda") )
   
   #GET WIND/WEATHER DATA
+  aData_cleaned = aData[, !colnames(aData) %in% c("site", "yr","mth")]
+  colnames(aData_cleaned)
   gps = matchGFS(aData) #PAMscapes function that matches weather to all 
+  # names(gps)
+  gps$yr  = year(gps$UTC)
+  gps$mth = month(gps$UTC)
+  gps$site = site
+  
   save(gps, file = paste0(outDirP, "data_", tolower(site), "_HourlySPL-gfs_", DC, ".Rda") )
- # names(gps)
-  # gps[is.na(gps$windMag),]
  
   } else if (length(sData) == 0 & length(cData) > 0) {  # just onms data
- 
+    cat("Just ONMS data....")
   
-  if (length(aData) > 0){ #already processed data
+  if (length(aData) > 0) { #already processed data
     
     cData_mismatched = setdiff(colnames(cDatah), colnames(aData))
     cData_cleaned = cDatah[, !colnames(cDatah) %in% cData_mismatched]
     aData = rbind(aData, cData_cleaned)
     
     #SAVE DATA ####
-    save(aData, file = file = paste0(outDirP, "data_", tolower(site), "_HourlySPL_", DC, ".Rda") )
+    save(aData, file = paste0(outDirP, "data_", tolower(site), "_HourlySPL_", DC, ".Rda") )
     
     #SAVE FILES PROCESSED ####
     processedFiles  = c(basename(inFiles)) 
