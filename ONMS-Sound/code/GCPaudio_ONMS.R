@@ -30,11 +30,15 @@ projectN2 = "sanctsound" #nrs # set this to deal with different metadata formats
 
 outDir =  "F:\\CODE\\GitHub\\SoundscapeScenes\\ONMS-Sound\\" 
 outputDir = paste0( outDir,"products\\onms\\")   
-inFile = paste0(outDir, "context//ONMSSound_IndicatorCategories.xlsx")
+outputR = paste0( outDir,"report")   
+
+metadataDir = "F:\\CODE\\GitHub\\SoundscapesWebsite\\resources"
+inFile = paste0(metadataDir, "//ONMSSound_IndicatorCategories.xlsx")
 lookup = as.data.frame ( read.xlsx(inFile) )
 colnames(lookup) <- lookup[1, ]  # Set first row as column names
 lookup <- as.data.frame( lookup[-1, ] )          # Remove the first row
 colnames(lookup) 
+colnames(lookup)[5] = "NCEI"
 
 # LIST SUB DIRECTORIES ####
 #these should be the "monitoring sites" you want to gather information about
@@ -139,8 +143,6 @@ output$Start_Date = as.Date(output$Start_Date, format = "%Y-%m-%d")
 output$End_Date = as.Date(output$End_Date, format = "%Y-%m-%d")
 
 # ADD INFO from lookup ####
-colnames(lookup)[5] = "NCEI"
-#Sites from archive that are not found in lookup$NCEI ID``.
 setdiff(unique(output$Site), unique(lookup$NCEI))
 setdiff( unique(lookup$NCEI), unique(output$Site) )
 matched_data = merge(output, lookup, by.x = "Site", by.y = "NCEI", all.x = TRUE)
@@ -158,7 +160,7 @@ save(outputT, file = paste0(outputDir, "\\data_gantt_ONMS_gantt_", DC, ".Rda") )
 write.csv(outputT, file = paste0(outputDir, "\\data_gantt_ONMS_gantt_", DC, ".csv") )
 colnames(outputT)
 
-# GANTT PLOT  ####
+# GANTT CHART  ####
 projectN = onms
 uColors = unique(outputT$Instrument)
 if (projectN == "onms"){
@@ -181,7 +183,7 @@ pT = ggplot(outputT, aes(y = Site, x = Start_Date, xend = End_Date)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
         axis.text.y = element_text(angle = 10, size = 12))
 pT
-ggsave(filename = paste0(outputDir, "/gantt_ONMS_", DC, ".jpg"), plot = pT, width = 8, height = 6, dpi = 300)
+ggsave(filename = paste0(outputR, "\\gantt_ONMS.jpg"), plot = pT, width = 8, height = 6, dpi = 300)
 
 
 # MAP DATA ####
@@ -194,22 +196,21 @@ outputMap =  as.data.frame(
       min_start_date = min(Start_Date, na.rm = TRUE)  # Getting the minimum start date for each site
     )
 )
-lookupT = lookup[!is.na(lookup$`NCEI ID`),] 
+head(outputMap)
+#lookupT = lookup[!is.na(lookup$NCEI),] 
 outputMap$Site = as.character(outputMap$Site)
-lookupT$`NCEI ID` <- as.character(lookupT$`NCEI ID`)
-outputMap2 <- merge(outputMap, lookupT, by.x = "Site", by.y = "NCEI ID", all.x = TRUE)
-colnames ( outputMap2)
-outputMap2a = outputMap2[,c(4,6, 1:3,8:9) ]
+outputMap2 = merge(outputMap, lookupT, by.x = "Site", by.y = "NCEI", all.x = TRUE)
+
+
+outputMap2a = outputMap2[,c(4,6, 1:3,13:14) ]
 colnames ( outputMap2a)
 colnames(outputMap2a) = c("Region","Sanctuary", "Site",
                          "TotalDays","StartDate","Latitude", "Longitude") 
-outputMap2a = na.omit(outputMap2a)
 
+#remove sites not in ONMS inventory - na in region
+outputMap2a = outputMap2a[!is.na(outputMap2a$Region), ]
 save(outputMap2a, file = paste0(outputDir, "\\map_ONMS_map_", DC, ".Rda") )
 write.csv( outputMap2a, file = paste0(outputDir, "\\map_ONMS_map_", DC, ".csv") )
-
-
-
 
 # Assuming your data frame is named 'data'
 # Convert the data frame to an sf object for mapping
@@ -233,7 +234,8 @@ p = ggplot() +
            expand = FALSE) +  # Trim map to data points
   labs(title = "Map of Sites by Region and Total Days",
        size = "Total Days",
-       color = "Region") +
+       color = "Region",
+       subtitle = paste0("NCEI google cloud platform (", typ, ") as of ", format(Sys.Date(), "%B %d, %Y") ) ) +
   scale_size_continuous(range = c(.5, 10))  # Adjust point size range
-
-ggsave(filename = paste0(outputDir, "/map_ONMS_", DC, ".jpg"), plot = p, width = 8, height = 6, dpi = 300)
+p
+ggsave(filename = paste0(outputR, "\\map_ONMS.jpg"), plot = p, width = 8, height = 6, dpi = 300)
