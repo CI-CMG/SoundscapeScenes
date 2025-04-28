@@ -196,9 +196,10 @@ pT = ggplot(outputT, aes(y = Site, x = Start_Date, xend = End_Date, fill = Regio
 pT
 ggsave(filename = paste0(outputR, "\\gantt_ONMS.jpg"), plot = pT, width = 8, height = 6, dpi = 300)
 
-
+outputT$Site
 # MAP DATA ####
 #reformat for per site- total recordings 
+rm ( outputMap )
 outputMap =  as.data.frame(
   outputT %>%
     group_by(Site) %>%
@@ -208,28 +209,20 @@ outputMap =  as.data.frame(
     )
 )
 head(outputMap)
-#lookupT = lookup[!is.na(lookup$NCEI),] 
 outputMap$Site = as.character(outputMap$Site)
-outputMap2 = merge(outputMap, lookupT, by.x = "Site", by.y = "NCEI", all.x = TRUE)
 
-
-outputMap2a = outputMap2[,c(4,6, 1:3,13:14) ]
-colnames ( outputMap2a)
-colnames(outputMap2a) = c("Region","Sanctuary", "Site",
-                         "TotalDays","StartDate","Latitude", "Longitude") 
-
-#remove sites not in ONMS inventory - na in region
-outputMap2a = outputMap2a[!is.na(outputMap2a$Region), ]
-save(outputMap2a, file = paste0(outputDir, "\\map_ONMS_map_", DC, ".Rda") )
-write.csv( outputMap2a, file = paste0(outputDir, "\\map_ONMS_map_", DC, ".csv") )
-
+lookup_selected <- lookup %>% select(NCEI, Region, Latitude, Longitude)
+outputMap = left_join(outputMap, lookup_selected, by = c("Site" = "NCEI"))
+colnames(outputMap)
+write.csv( outputMap, file = paste0(outputDir, "\\map_ONMS_map_", DC, ".csv") )
+outputMap2a = outputMap
 # Assuming your data frame is named 'data'
 # Convert the data frame to an sf object for mapping
 outputMap2a$Latitude = as.numeric(as.character( gsub("B0", '', outputMap2a$Latitude )) )
 outputMap2a$Longitude = as.numeric(as.character( gsub("B0", '', outputMap2a$Longitude )) )
-outputMap2a$TotalDays = as.numeric(as.character(outputMap2a$TotalDays))
+outputMap2a$TotalDays = as.numeric(as.character(outputMap2a$total_days))
 data_sf <- st_as_sf(outputMap2a, coords = c("Longitude", "Latitude"), crs = 4326)
-
+data_sf
 # Create the map
 # Get world land data (in low resolution, change to 'medium' or 'large' if needed)
 world <- ne_countries(scale = "medium", returnclass = "sf")
@@ -238,15 +231,16 @@ bbox <- st_bbox(data_sf)
 p = ggplot() +
   geom_sf(data = world, fill = "gray80", color = "gray40") +   # Add land background
   geom_sf(data = data_sf, aes(color = Region, size = TotalDays)) +  # Color by Region, size by total days
-  #facet_wrap(~Region) +
+  scale_color_manual(values = instrument_colors) +  # Use specific colors for instruments
   theme_minimal() +
   coord_sf(xlim = c(bbox["xmin"], bbox["xmax"]+5), 
            ylim = c(bbox["ymin"], bbox["ymax"]+5), 
            expand = FALSE) +  # Trim map to data points
-  labs(title = "Map of Sites by Region and Total Days",
-       size = "Total Days",
+  labs(title = "",
+       size =  "Total Days",
        color = "Region",
-       subtitle = paste0("NCEI google cloud platform (", typ, ") as of ", format(Sys.Date(), "%B %d, %Y") ) ) +
-  scale_size_continuous(range = c(.5, 10))  # Adjust point size range
+       caption = paste0("Data available on NCEI-GCP (", typ, ") as of ", format(Sys.Date(), "%B %d, %Y") ) ) +
+  scale_size_continuous(range = c(.5, 8))  # Adjust point size range
 p
+
 ggsave(filename = paste0(outputR, "\\map_ONMS.jpg"), plot = p, width = 8, height = 6, dpi = 300)
