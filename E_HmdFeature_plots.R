@@ -29,23 +29,42 @@ matlab_to_r_timestamp <- function(matlab_date) {
   return(posix_time)
 }
 
+# used to fill in isolated or removed data ##
+start_dates <- as.Date(c("2023-06-01"))
+end_dates <-   as.Date(c("2023-07-01"))
+time_sequence <- seq(from = as.POSIXct(start_dates),
+                     to = as.POSIXct(end_dates),
+                     by = "1 min")
+full_times <- data.frame(dateTime  = time_sequence)
+
 ## CLUSTER RESULTS ####
 dirClus = "F:\\ONMS\\feature\\CC"
 inFilesCC = list.files( dirClus, pattern = "*_Bouts.csv$", full.names = T)
 inFilesCC = inFilesCC[grepl(ver,inFilesCC) ]
 clustAll = NULL
 AllmaxSpectra = NULL
-for (f in 1:length(inFilesCC )) {
+
+for (f in 1:length(inFilesCC )) { # f = 1
   clust = read.csv(inFilesCC[f])
   clust$dateTime <- as.POSIXct(  clust$StartTime,   format = "%d-%b-%Y %H:%M:%S", tz = "GMT") 
   clust$site = substr ( sapply( strsplit(basename(inFilesCC[f]), "_"), "[[", 1), start = 1, stop =4 )
- 
-  cat("Cluster data: ",  unique(clust$site), length(unique(clust$ClusterIDNumber)), "clusters " , as.character(min(clust$dateTime)),  as.character(max(clust$dateTime)),"\n" )
+  
+  cat("Cluster data: ",  unique(clust$site), length(unique(clust$ClusterIDNumber) ), "clusters ", 
+      nrow(clusttmp), "minutes", 
+      as.character(min(clust$dateTime)),  as.character(max(clust$dateTime)),"\n" )
   
   clusttmp = select(clust, c(site, dateTime, ClusterIDNumber) )
+  #(30000 - nrow(clusttmp))/30000
+  # add back in missing minutes- either removed or isolated
+  #clusttmp =  merge(full_times, clusttmp, by = "dateTime", all.x = TRUE) 
+  #head( clusttmp )
+  #clusttmp$site = substr ( sapply( strsplit(basename(inFilesCC[f]), "_"), "[[", 1), start = 1, stop =4 )
+  clusttmp$ClusterIDNumber[is.na ( clusttmp$ClusterIDNumber )] = 0
   clustAll = rbind(clustAll, clusttmp)
+  
 }
 clustAll$ucluster = paste( clustAll$ClusterIDNumber, clustAll$site, sep = "_")
+head(clustAll)
 
 ## PIE FOR CLUSTERS ####
 tal = as.data.frame( clustAll %>% group_by(ClusterIDNumber, site) %>% tally() )
@@ -77,6 +96,7 @@ ggplot(tal_complete, aes(x = "", y = PerTime, fill = as.factor(ClusterIDNumber))
 ## SPECTRA FOR CLUSTERS ####
 inFilesS = list.files( dirClus, pattern = "*_types_all.mat$", full.names = T)
 inFilesS = inFilesS[grepl(ver,inFilesS) ]
+
 for (ii in 1:length(inFilesS)) {
   df = read.mat(inFilesS[ii])
   site = substr ( sapply( strsplit(basename(inFilesS[ii]), "_"), "[[", 1), start = 1, stop =4 )
@@ -95,7 +115,7 @@ for (ii in 1:length(inFilesS)) {
   tal_site = tal_complete[tal_complete$site == site,]
   tal_site = tal_site[tal_site$PerTime >  0,]
   
- 
+  
   dSpectraM = melt(dSpectra, id.vars = c("FQ"), measure.vars = colnames(dSpectra)[1:nClusters+1])
   dSpectraM$ClusterIDNumber = as.numeric( as.character( substr(dSpectraM$variable, start = 8, stop=10) ))
   per_time_lookup = setNames(tal_site$PerTime, tal_site$ClusterIDNumber)
@@ -127,7 +147,7 @@ for (ii in 1:length(inFilesS)) {
     geom_bar(stat = "identity", width = 1,color = "white", size = 0.2) + 
     #coord_polar("y") +
     geom_text( aes( label = ClusterIDNumber), 
-              position = position_stack(vjust = 0.5), color = "black", size = 3) +
+               position = position_stack(vjust = 0.5), color = "black", size = 3) +
     theme_minimal() +
     labs(
       title = "",
@@ -150,7 +170,7 @@ for (ii in 1:length(inFilesS)) {
   names(dataALLm)
   dataALLmS = dataALLm[dataALLm$site == site,]
   dataALLmS = as.data.frame(dataALLmS)
-
+  
   pT = ggplot(dataALLmS, aes(dateTime, as.factor( value ), fill= as.factor(value)) ) + 
     geom_tile() +
     labs(title = paste0("Occurence of soundscape features at ", site) )+
@@ -159,66 +179,68 @@ for (ii in 1:length(inFilesS)) {
     theme_minimal() +
     theme(panel.grid = element_blank(),
           legend.position = "none") 
-    
+  
   left_stack = arrangeGrob(p1, separator, p2, widths = c(4, 0.1, 0.4))
- pall =  grid.arrange(left_stack, pT, nrow = 2, heights = c(5,4))
- #ggsave(filename = paste0(dirClus, "\\plot_", tolower(site), "_ClusterAll.jpg"), plot = pall, width = 10, height = 10, dpi = 300)
+  pall =  grid.arrange(left_stack, pT, nrow = 2, heights = c(5,4))
+  #ggsave(filename = paste0(dirClus, "\\plot_", tolower(site), "_ClusterAll.jpg"), plot = pall, width = 10, height = 10, dpi = 300)
   #Check if the colors for clusters matching up??
   #bout output
   #sort( as.numeric( as.character( unique( dataALLmS$value )) ) )
   #spectra output
   #as.numeric( as.character( unique( substr(dSpectraM$variable , start = 8, stop = 10) )  ) )
   #tal_site
- 
- # cluster daily patterns
- dataALLmS$Hr = hour(  dataALLmS$dateTime)
- unique(dataALLmS$site)
- talHR = as.data.frame( dataALLmS %>% group_by(Hr, value) %>% tally() )
- #need to fill in missing hours for each cluster 
- uclust = unique(dataALLmS$value )
- talHRp = NULL
- clSig = NULL
- for ( uu in 1:length(uclust) ){
-   #separate by cluster
-   tmp = talHR[ talHR$value == uclust[uu], ]
-   #fill in missing hours for each cluster
-   tmp = tmp %>% complete(Hr = 0:23, fill = list(n = 0, value = uclust[uu]))
-   #get percent time in each hour for the cluster
-   tmp$PerTime = round((tmp$n / sum(tmp$n)) * 100, 2)
-   
-   #should result in 100 for each cluster
-   #cat(sum(tmp$PerTime), "\n")
-   #check distribution over hours of the day
-   tmp$angle <- (tmp$PerTime / 100) * 360
-   result = rayleigh.test(circular(tmp$angle, type = "angles"))
-   tmp$sig = result$p.value
-   if(result$p.value < .05){
-   cat(site, ": ", uclust[uu], "- ", result$p.value, "\n") 
-     clSig = c(clSig,uclust[uu] )  }
-   
-   talHRp = rbind(talHRp, tmp)
-   
- }
- 
- 
- pHr = ggplot(talHRp, aes(x = as.factor(value) , y = PerTime, fill = as.factor(Hr))) +
-   geom_bar(stat = "identity", width = 1,color = "white", size = 0.2) +
-   theme_minimal()+
-   labs(x = "Cluster" , y = "Percent of hour", 
-        caption = "asterisk indicates concentration of the cluster around specific hours using in Rayleigh test ") +
-   ggtitle (paste0( "Hourly occurence of soundscape features at ", site) ) +
-   theme(panel.grid = element_blank(),
-         legend.position = "none")+
-   scale_fill_grey(start = 0.1, end = 0.9)+
-   #add signifiance to the graphic
-   annotate("text", x = clSig, y = rep(100, length(clSig)), label = "*", size = 6, color = "black")
- #pHr
- 
- pall2 =  grid.arrange(left_stack, pT, pHr, nrow = 3, heights = c(5,4,4))
- ggsave(filename = paste0(dirClus, "\\plot_", tolower(site), "_ClusterAll2.jpg"), plot = pall2, width = 10, height = 10, dpi = 300)
- 
- 
+  
+  # cluster daily patterns
+  dataALLmS$Hr = hour(  dataALLmS$dateTime)
+  unique(dataALLmS$site)
+  talHR = as.data.frame( dataALLmS %>% group_by(Hr, value) %>% tally() )
+  #need to fill in missing hours for each cluster 
+  uclust = unique(dataALLmS$value )
+  talHRp = NULL
+  clSig = NULL
+  for ( uu in 1:length(uclust) ){
+    #separate by cluster
+    tmp = talHR[ talHR$value == uclust[uu], ]
+    #fill in missing hours for each cluster
+    tmp = tmp %>% complete(Hr = 0:23, fill = list(n = 0, value = uclust[uu]))
+    #get percent time in each hour for the cluster
+    tmp$PerTime = round((tmp$n / sum(tmp$n)) * 100, 2)
+    
+    #should result in 100 for each cluster
+    #cat(sum(tmp$PerTime), "\n")
+    #check distribution over hours of the day
+    tmp$angle <- (tmp$PerTime / 100) * 360
+    result = rayleigh.test(circular(tmp$angle, type = "angles"))
+    tmp$sig = result$p.value
+    if(result$p.value < .05){
+      cat(site, ": ", uclust[uu], "- ", result$p.value, "\n") 
+      clSig = c(clSig,uclust[uu] )  }
+    
+    talHRp = rbind(talHRp, tmp)
+    
+  }
+  
+  
+  pHr = ggplot(talHRp, aes(x = as.factor(value) , y = PerTime, fill = as.factor(Hr))) +
+    geom_bar(stat = "identity", width = 1,color = "white", size = 0.2) +
+    theme_minimal()+
+    labs(x = "Cluster" , y = "Percent of hour", 
+         caption = "asterisk indicates concentration of the cluster around specific hours using in Rayleigh test ") +
+    ggtitle (paste0( "Hourly occurence of soundscape features at ", site) ) +
+    theme(panel.grid = element_blank(),
+          legend.position = "none")+
+    scale_fill_grey(start = 0.1, end = 0.9)+
+    #add signifiance to the graphic
+    annotate("text", x = clSig, y = rep(100, length(clSig)), label = "*", size = 6, color = "black")
+  #pHr
+  
+  pall2 =  grid.arrange(left_stack, pT, pHr, nrow = 3, heights = c(5,4,4))
+  ggsave(filename = paste0(dirClus, "\\plot_", tolower(site), "_ClusterAll2.jpg"), plot = pall2, width = 10, height = 10, dpi = 300)
+  
+  
 }
+
+
 tmp = AllmaxSpectra[ AllmaxSpectra$site == "mb01",]
 AllmaxSpectra2 = AllmaxSpectra[ AllmaxSpectra$site != "mb01",]
 AllmaxSpectra2 = AllmaxSpectra2[ AllmaxSpectra2$site != "sb01",]

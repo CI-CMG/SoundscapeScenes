@@ -143,25 +143,26 @@ output$Start_Date = as.Date(output$Start_Date, format = "%Y-%m-%d")
 output$End_Date = as.Date(output$End_Date, format = "%Y-%m-%d")
 
 # ADD INFO from lookup ####
-setdiff(unique(output$Site), unique(lookup$NCEI))
-setdiff( unique(lookup$NCEI), unique(output$Site) )
-matched_data = merge(output, lookup, by.x = "Site", by.y = "NCEI", all.x = TRUE)
-# matched_data = output %>% left_join(lookup, by = c("Site" = "NCEI ID"))
-output$Region = matched_data$Region
-output$Identifer = matched_data$`Common Name/Identifers`
-output$Description = matched_data$`Site Description/Driver for Monitoring Location Choice`
+lookup_selected <- lookup %>% select(NCEI, Region,`Common Name/Identifiers`,`Site Description/Driver for Monitoring Location Choice`)
+output = left_join(output, lookup_selected, by = c("Site" = "NCEI"))
 output$Duration = difftime( output$End_Date, output$Start_Date,"days")
 colnames(output)
 #remove non-monitoring sites
+# fix- only once
+# output <- output %>% select(-Region.x)
+# output <- output %>% rename(Region = Region.y)
+
+setdiff(unique(output$Site), unique(lookup$NCEI))
 outputT = output[!is.na(output$Region),] 
-#outputTt = outputT[,c(1,10, 9, 3:6, 13, 7:8, 11:12) ]
+
 
 save(outputT, file = paste0(outputDir, "\\data_gantt_ONMS_gantt_", DC, ".Rda") )
 write.csv(outputT, file = paste0(outputDir, "\\data_gantt_ONMS_gantt_", DC, ".csv") )
 colnames(outputT)
 
 # GANTT CHART  ####
-projectN = onms
+load(file = paste0(outputDir, "\\data_gantt_ONMS_gantt_2025-04-28.Rda") )
+projectN = "onmsRegion"
 uColors = unique(outputT$Instrument)
 if (projectN == "onms"){
   instrument_colors <- c(
@@ -170,15 +171,25 @@ if (projectN == "onms"){
     "SoundTrap 300" = "#44AA99", 
     "HARP" =          "#DDCC77") #DDCC77
 }
+uColors = unique(outputT$Region)
+if (projectN == "onmsRegion"){
+  instrument_colors <- c(
+    "Pacific Islands" = "#C6E6F0",  
+    "West Coast"      = "#53B0D7",  
+    "East Coast"      = "#004295", 
+    "Gulf Coast"      = "#001743") 
+}
+nmfspalette::nmfs_palette("oceans")(10)
+#[1] "#C6E6F0" "#8CCBE3" "#53B0D7" "#1F95CF" "#0072BB" "#004295" "#002B7B" "#002467" "#001D55" "#001743"
 
 # geom_tile option 
 colnames(outputT)
-pT = ggplot(outputT, aes(y = Site, x = Start_Date, xend = End_Date)) +
-  geom_tile(aes(x = Start_Date, width = as.numeric(End_Date - Start_Date), fill = Instrument), 
-            color = "black", height = 0.4) +  # Fill color by Instrument and outline in black
+pT = ggplot(outputT, aes(y = Site, x = Start_Date, xend = End_Date, fill = Region ) ) +
+  geom_tile(aes(x = Start_Date, width = as.numeric(End_Date - Start_Date) ) , 
+            color = "gray", height = 0.6) +  # Fill color by Instrument and outline in black
   scale_fill_manual(values = instrument_colors) +  # Use specific colors for instruments
-  labs(x = "", y = "", title = paste0(toupper(projectN),  " - Ocean Sound Monitoring Data Summary"),
-       subtitle = paste0("NCEI google cloud platform (", typ, ") as of ", format(Sys.Date(), "%B %d, %Y"))) +
+  labs(x = "", y = "", title = "",
+       subtitle = paste0("Data available on NCEI-GCP (", typ, ") as of ", format(Sys.Date(), "%B %d, %Y"))) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
         axis.text.y = element_text(angle = 10, size = 12))
