@@ -152,9 +152,13 @@ colnames(output)
 # output <- output %>% select(-Region.x)
 # output <- output %>% rename(Region = Region.y)
 
+output$Project [is.na(output$Region)] = "SanctSound" 
+output$Project [!is.na(output$Region)] = "ONMS-sound" 
+save(output, file = paste0(outputDir, "\\data_gantt_ONMS_gantt_ALL", DC, ".Rda") )
+#load( file = paste0(outputDir, "\\data_gantt_ONMS_gantt_ALL", DC, ".Rda"))
+
 setdiff(unique(output$Site), unique(lookup$NCEI))
 outputT = output[!is.na(output$Region),] 
-
 
 save(outputT, file = paste0(outputDir, "\\data_gantt_ONMS_gantt_", DC, ".Rda") )
 write.csv(outputT, file = paste0(outputDir, "\\data_gantt_ONMS_gantt_", DC, ".csv") )
@@ -179,6 +183,12 @@ if (projectN == "onmsRegion"){
     "East Coast"      = "#004295", 
     "Gulf Coast"      = "#001743") 
 }
+
+project_colors <- c(
+  "SanctSound" = "#53B0D7",  
+  "ONMS-sound"= "#004295") 
+
+
 # nmfspalette::nmfs_palette("oceans")(10)
 #[1] "#C6E6F0" "#8CCBE3" "#53B0D7" "#1F95CF" "#0072BB" "#004295" "#002B7B" "#002467" "#001D55" "#001743"
 
@@ -186,6 +196,29 @@ if (projectN == "onmsRegion"){
 colnames(outputT)
 outputT <- outputT %>%
   mutate(Site = fct_reorder2(Site, Region, Start_Date))  # Reorders Site within Region
+
+output$sanctuaryName = substr(output$Site, start = 1, stop =2)
+wc = c("oc","ci","mb","cb","fi")
+ec = c("sb","gr","fk","fg")
+pi = c("hi","pm","as")
+gl = c("lo")
+output$Region[output$sanctuaryName %in% wc] <- "West Coast"
+output$Region[output$sanctuaryName %in% ec] <- "East Coast"
+output$Region[output$sanctuaryName %in% pi] <- "Pacific Islands"
+output$Region[output$sanctuaryName %in% gl] <- "Great Lakes"
+colnames(output)
+pT = ggplot(output, aes(y = Site, x = Start_Date, xend = End_Date, fill = Project ) ) +
+  geom_tile(aes(x = Start_Date, width = as.numeric(End_Date - Start_Date) ) , 
+            color = "gray", height = 0.6) +  # Fill color by Instrument and outline in black
+  scale_fill_manual(values = project_colors) +  # Use specific colors for instruments
+  labs(x = "", y = "", title = "",
+       subtitle = paste0("Data available on NCEI-GCP (", typ, ") as of ", format(Sys.Date(), "%B %d, %Y"))) +
+  facet_wrap(~Region,scales = "free_y") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+        axis.text.y = element_text(angle = 10, size = 12))
+pT
+ggsave(filename = paste0(outputR, "\\gantt_ONMS.jpg"), plot = pT, width = 8, height = 6, dpi = 300)
 
 pT = ggplot(outputT, aes(y = Site, x = Start_Date, xend = End_Date, fill = Region ) ) +
   geom_tile(aes(x = Start_Date, width = as.numeric(End_Date - Start_Date) ) , 
@@ -198,9 +231,8 @@ pT = ggplot(outputT, aes(y = Site, x = Start_Date, xend = End_Date, fill = Regio
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
         axis.text.y = element_text(angle = 10, size = 12))
 pT
-ggsave(filename = paste0(outputR, "\\gantt_ONMS.jpg"), plot = pT, width = 8, height = 6, dpi = 300)
+ggsave(filename = paste0(outputR, "\\gantt_ONMS-sound.jpg"), plot = pT, width = 8, height = 6, dpi = 300)
 
-outputT$Site
 # MAP DATA ####
 #reformat for per site- total recordings 
 rm ( outputMap )
