@@ -179,17 +179,21 @@ if (projectN == "onmsRegion"){
     "East Coast"      = "#004295", 
     "Gulf Coast"      = "#001743") 
 }
-nmfspalette::nmfs_palette("oceans")(10)
+# nmfspalette::nmfs_palette("oceans")(10)
 #[1] "#C6E6F0" "#8CCBE3" "#53B0D7" "#1F95CF" "#0072BB" "#004295" "#002B7B" "#002467" "#001D55" "#001743"
 
 # geom_tile option 
 colnames(outputT)
+outputT <- outputT %>%
+  mutate(Site = fct_reorder2(Site, Region, Start_Date))  # Reorders Site within Region
+
 pT = ggplot(outputT, aes(y = Site, x = Start_Date, xend = End_Date, fill = Region ) ) +
   geom_tile(aes(x = Start_Date, width = as.numeric(End_Date - Start_Date) ) , 
             color = "gray", height = 0.6) +  # Fill color by Instrument and outline in black
   scale_fill_manual(values = instrument_colors) +  # Use specific colors for instruments
   labs(x = "", y = "", title = "",
        subtitle = paste0("Data available on NCEI-GCP (", typ, ") as of ", format(Sys.Date(), "%B %d, %Y"))) +
+  facet_wrap(~Region,scales = "free_y") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
         axis.text.y = element_text(angle = 10, size = 12))

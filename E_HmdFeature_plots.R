@@ -44,13 +44,13 @@ inFilesCC = inFilesCC[grepl(ver,inFilesCC) ]
 clustAll = NULL
 AllmaxSpectra = NULL
 
-for (f in 1:length(inFilesCC )) { # f = 1
+for (f in 1:length(inFilesCC )) { # f = 9
   clust = read.csv(inFilesCC[f])
   clust$dateTime <- as.POSIXct(  clust$StartTime,   format = "%d-%b-%Y %H:%M:%S", tz = "GMT") 
   clust$site = substr ( sapply( strsplit(basename(inFilesCC[f]), "_"), "[[", 1), start = 1, stop =4 )
   
   cat("Cluster data: ",  unique(clust$site), length(unique(clust$ClusterIDNumber) ), "clusters ", 
-      nrow(clusttmp), "minutes", 
+      nrow(clust), "minutes", 
       as.character(min(clust$dateTime)),  as.character(max(clust$dateTime)),"\n" )
   
   clusttmp = select(clust, c(site, dateTime, ClusterIDNumber) )
