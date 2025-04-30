@@ -212,13 +212,14 @@ pT = ggplot(output, aes(y = Site, x = Start_Date, xend = End_Date, fill = Projec
             color = "gray", height = 0.6) +  # Fill color by Instrument and outline in black
   scale_fill_manual(values = project_colors) +  # Use specific colors for instruments
   labs(x = "", y = "", title = "",
-       subtitle = paste0("Data available on NCEI-GCP (", typ, ") as of ", format(Sys.Date(), "%B %d, %Y"))) +
+       subtitle = paste0("Data available as of ", format(Sys.Date(), "%B %d, %Y"))) +
   facet_wrap(~Region,scales = "free_y") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
-        axis.text.y = element_text(angle = 10, size = 12))
+  theme_minimal(base_size = 16) +
+  theme( legend.position = "top", legend.justification = "left",
+         axis.text.x = element_text(angle = 0, hjust = 1, size = 12),
+         axis.text.y = element_text(angle = 0, size = 12))
 pT
-ggsave(filename = paste0(outputR, "\\gantt_ONMS.jpg"), plot = pT, width = 8, height = 6, dpi = 300)
+ggsave(filename = paste0(outputR, "\\gantt_ONMS.jpg"), plot = pT, width = 10, height = 6, dpi = 300)
 
 pT = ggplot(outputT, aes(y = Site, x = Start_Date, xend = End_Date, fill = Region ) ) +
   geom_tile(aes(x = Start_Date, width = as.numeric(End_Date - Start_Date) ) , 
