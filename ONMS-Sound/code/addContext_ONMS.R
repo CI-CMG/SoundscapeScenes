@@ -471,6 +471,8 @@ for (uu in 1:length(ONMSsites)) {
   days_of_year_for_months <- yday(monthly_sequence)
   ### calculate percentage above threshold ####
   # TOL100_50 > 60 for each year
+  #names(dailyFQ)
+  #hist(dailyFQ$TOL100_50)
   percentage_above <- dailyFQ %>%
     mutate(year = year(Date)) %>%  # Create 'year' column from Date
     group_by(year) %>%  # Group by year
@@ -511,11 +513,12 @@ for (uu in 1:length(ONMSsites)) {
     scale_color_manual(values = rev(colorRampPalette(c("darkblue", "lightblue"))(length(unique(summary$year)))))  +
     # Main data layers (drawn above the shaded area)
     geom_line(size = 1, na.rm = TRUE) +
+    
     geom_ribbon(aes(ymin = TOL100_25, ymax = TOL100_75), fill = "gray", alpha = 0.5) +
-    facet_wrap(~facet_title, nrow = length(unique(dailyFQ_complete$yr))) +
+    facet_wrap(~facet_title, nrow = length(unique(dailyFQ$yr)) ) +
     theme_minimal() +
     scale_x_continuous(breaks = days_of_year_for_months, labels = month_names_seq) +  
-    geom_hline(aes(yintercept = ab), linetype = "dashed", color = "gray", size = 0.7) +
+   geom_hline(aes(yintercept = ab), linetype = "dashed", color = "gray", size = 0.7) +
     
     theme(
       legend.position = "none",
@@ -535,6 +538,8 @@ for (uu in 1:length(ONMSsites)) {
   ### save: plot 125 Hz time series ####
   ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_125Hz.jpg"), plot = p, width = 10, height = 10, dpi = 300)
   
+  ## TIME SERIES - interactive ####
+
   
   ## TIME SERIES - exceedence 100 Hz  ####
   cols_to_select = c("UTC", "windMag","wind_category", "Season", fqIn2)
@@ -713,8 +718,6 @@ for (uu in 1:length(ONMSsites)) {
   pE
   ### save: plot NE time series ####
   ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_Exceed100.jpg"), plot = pE, width = 10, height = 10, dpi = 300)
-  
-  
   ## SAVE UPDATED DATA ####
   save(gps, file = paste0(outDirP, "data_", tolower(site), "_HourlySPL-gfs-season_", DC, ".Rda") )
   
