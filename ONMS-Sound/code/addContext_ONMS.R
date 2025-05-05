@@ -30,9 +30,9 @@ DC = Sys.Date()
 project = "ONMS"
 fqIn = "TOL_125" 
 ab = 70 # threshold for above frequency in
-fqIn2 = "TOL_100" # no wind model for 125 Hz- ugh!!!
-fqIn2name = "100 Hz"
-ab2 = 5
+fqIn2 = "TOL_500" # no wind model for 125 Hz- ugh!!!
+fqIn2name = "500 Hz"
+ab2 = 0 #5
 windUpp = 22.6 #which wind model result to show on plot
 windLow = 1
 windH = 10 #measured wind speeds
@@ -301,8 +301,8 @@ for (uu in 1:length(ONMSsites)) {
     theme(legend.position = "top",
           plot.title = element_text(size = 16, face = "bold", hjust = 0)) +  # This line removes the legend
     labs(
-      title = paste0(toupper(site), " -", 
-                     tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
+      title = paste0(toupper(site)), #, "- ", 
+                     #tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
       #subtitle = paste0("data summarized from ", st, " to ", ed, "\n vertical lines indicate frequencies for sounds of interest in this soundscape" ),
       caption = paste0("vertical lines indicate frequencies for sounds of interest in this soundscape \n black lines are expected wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s]"), 
       x = "Frequency Hz",
@@ -383,8 +383,8 @@ for (uu in 1:length(ONMSsites)) {
     theme_minimal() +
     # This line removes the legend
     labs(
-      title =  paste0(toupper(site), "- ", 
-                      tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
+      title =  paste0(toupper(site)), #, "- ", 
+                      #tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
       #subtitle = paste0( "Data summarized from ", st, " to ", ed),
       caption  = paste0("Vertical lines indicate frequencies for sounds of interest in this soundscape \n",
                         "black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s] ",
@@ -524,7 +524,7 @@ for (uu in 1:length(ONMSsites)) {
       panel.spacing = unit(.1, "lines") ) + # Adjust the spacing between facets) +
     labs(
       title = paste0("Soundscape at 125 Hz" ) ,
-      subtitle =  paste0(toupper(site), ", a ", tolower(FOIs$Oceanographic.setting[1]), " monitoring site \nshaded areas represents ", TOIs$Label[1] ),
+      subtitle =  paste0(toupper(site)), #, ", a ", tolower(FOIs$Oceanographic.setting[1]), " monitoring site \nshaded areas represents ", TOIs$Label[1] ),
       caption = '',
       x = "",
       y = expression(paste("Sound Levels (125 Hz dB re 1", mu, " Pa/Hz)" ) ),
@@ -545,9 +545,10 @@ for (uu in 1:length(ONMSsites)) {
   # what is the spl values for that windspeed?
   fqIdx = which( colnames( windInfo) == substr( fqIn2, 5,8)) #'100'
   wsIdx <- match(gpsFQ$closest_windMag, windInfo$windSpeed)
-  gpsFQ$WindModel100 <- windInfo[wsIdx, fqIdx]
+  gpsFQ$WindModelfq <- windInfo[wsIdx, fqIdx]
   #names(gpsFQ)
-  gpsFQ$Exceed = gpsFQ$TOL_100 -  gpsFQ$WindModel100 #actual - model
+  tol_col = grep("TOL", colnames(gpsFQ))
+  gpsFQ$Exceed = gpsFQ[,tol_col] -  gpsFQ$WindModelfq #actual - model
   gpsFQ$yr = year(gpsFQ$UTC)
   
   gpsFQ$Windthres = "unk"
@@ -572,8 +573,6 @@ for (uu in 1:length(ONMSsites)) {
     )
   
   seasonalNE = as.data.frame( seasonalNE )
-  
-  # ERROR ####
   
   sidx = siteInfo$Seasonality
   #put in alphetical order so plots line up!!!
@@ -704,7 +703,7 @@ for (uu in 1:length(ONMSsites)) {
     
     labs(
       title =paste0("Decibels Above Wind Noise" ),
-      subtitle =  paste0(toupper(site), ", a ", tolower(FOIs$Oceanographic.setting[1]), " monitoring site \nshaded areas represents ", TOIs$Label[1] ) ,
+      subtitle =  paste0(toupper(site) ), #, ", a ", tolower(FOIs$Oceanographic.setting[1]), " monitoring site \nshaded areas represents ", TOIs$Label[1] ) ,
       caption = paste0("difference between sound level and modeled sound levels based on wind speed at ", fqIn2name, "
                       threshold for % above = ", ab2, "dB"),
       x = "",
