@@ -17,6 +17,7 @@ library(xlsx)
 library(reshape)
 library(gtable)
 library(grid)
+library(plotly)
 
 # SET UP ####
 ##  sites ####
@@ -29,7 +30,7 @@ outDirG = paste0( outDir,"report\\" ) #graphics
 DC = Sys.Date()
 project = "ONMS"
 fqIn = "TOL_125" 
-ab = 70 # threshold for above frequency in
+ab = 65 # threshold for above frequency in
 fqIn2 = "TOL_500" # no wind model for 125 Hz- ugh!!!
 fqIn2name = "500 Hz"
 ab2 = 0 #5
@@ -227,7 +228,7 @@ for (uu in 1:length(ONMSsites)) {
     ) +
     #scale_x_discrete(labels = category_counts$wind_category) +  # Place the category labels under the plot
     scale_fill_manual(values = c("low" = "lightgray",  "med" = "gray", "high" = "darkgray") )
-  
+  l
   ### calculate quantiles ####
   tol_columns = grep("TOL", colnames(gps))
   #overall
@@ -266,7 +267,7 @@ for (uu in 1:length(ONMSsites)) {
   mallData = melt(seasonAll, id.vars = c("Quantile","Season"), measure.vars = tol_columns)
   mallData$variable = as.numeric( as.character( gsub("TOL_", "", mallData$variable )))
   colnames(mallData) = c("Quantile", "Season", "Frequency" , "SoundLevel" )
-  max(gps$windMag, na.rm = T)
+  #max(gps$windMag, na.rm = T)
   fqupper = max(as.numeric( as.character( mallData$Frequency) ))
   
   p = ggplot() +
@@ -387,8 +388,7 @@ for (uu in 1:length(ONMSsites)) {
                       #tolower(FOIs$Oceanographic.setting[1]), " monitoring site" ),
       #subtitle = paste0( "Data summarized from ", st, " to ", ed),
       caption  = paste0("Vertical lines indicate frequencies for sounds of interest in this soundscape \n",
-                        "black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s] ",
-                        "\n Seasonality = ", sidx),
+                        "black lines are modeled wind noise at this depth [", windLow,"m/s & ",windUpp, "m/s] "),
       x = "Frequency Hz",
       y = expression(paste("Sound Levels (dB re 1 ", mu, " Pa/Hz)" ) )
     ) +
@@ -461,18 +461,16 @@ for (uu in 1:length(ONMSsites)) {
     )
   dailyFQ$yr = year(dailyFQ$Date)
   dailyFQ$Julian = yday(dailyFQ$Date)
-  #fill in days
   dailyFQ_complete <- dailyFQ %>%
     group_by(yr) %>%
     complete(Julian = seq(min(Julian), max(Julian), by = 1)) %>%  # Fill in missing days
     arrange(yr, Julian) 
   monthly_sequence <- seq.Date(as.Date("2021-01-01"), as.Date("2021-12-01"), by = "month")
-  month_names_seq <- format(monthly_sequence, "%b")  # Extracts full month names
+  month_names_seq   <- format(monthly_sequence, "%b")  # Extracts full month names
   days_of_year_for_months <- yday(monthly_sequence)
+  hist(dailyFQ$TOL100_50)
+  
   ### calculate percentage above threshold ####
-  # TOL100_50 > 60 for each year
-  #names(dailyFQ)
-  #hist(dailyFQ$TOL100_50)
   percentage_above <- dailyFQ %>%
     mutate(year = year(Date)) %>%  # Create 'year' column from Date
     group_by(year) %>%  # Group by year
@@ -481,13 +479,13 @@ for (uu in 1:length(ONMSsites)) {
       count_above = sum(TOL100_50 > ab, na.rm = TRUE),  # Count of values > 60
       percentage_above = (count_above / total_count) * 100  # Percentage calculation
     )
-  # percentage_above
+  #percentage_above
   yrs = unique(dailyFQ_complete$yr)
   dailyFQ_complete$facet_title = NA
   for ( ii in 1:length(yrs ) ) {
     idx = which(dailyFQ_complete$yr == yrs[ii])
     idx2 =  which(percentage_above$year == yrs[ii])
-    dailyFQ_complete$facet_title[idx] = paste0(yrs[ii], "- ", round(percentage_above$percentage_above[idx2]),"% above" )
+    dailyFQ_complete$facet_title[idx] = paste0(yrs[ii], "- ", round(percentage_above$percentage_above[idx2],1),"% above" )
   }
   
   TOIs = TOIs %>% filter(yr %in% unique(dailyFQ_complete$yr))
@@ -526,9 +524,9 @@ for (uu in 1:length(ONMSsites)) {
       strip.background = element_blank(),  # Remove background behind facet labels
       panel.spacing = unit(.1, "lines") ) + # Adjust the spacing between facets) +
     labs(
-      title = paste0("Soundscape at 125 Hz" ) ,
+      title = paste0("Soundscape Conditions at 125 Hz" ) ,
       subtitle =  paste0(toupper(site)), #, ", a ", tolower(FOIs$Oceanographic.setting[1]), " monitoring site \nshaded areas represents ", TOIs$Label[1] ),
-      caption = '',
+      caption = paste0("% above threshold = ", ab, " dB"),
       x = "",
       y = expression(paste("Sound Levels (125 Hz dB re 1", mu, " Pa/Hz)" ) ),
       color = "Year"  # Label for the color legend
@@ -539,7 +537,26 @@ for (uu in 1:length(ONMSsites)) {
   ggsave(filename = paste0(outDirG, "plot_", tolower(site), "_125Hz.jpg"), plot = p, width = 10, height = 10, dpi = 300)
   
   ## TIME SERIES - interactive ####
-
+  yearly_data <- split(dailyFQ_complete, dailyFQ_complete$yr)
+  plots <- lapply(yearly_data, function(df) {
+    plot_ly(df, x = ~Julian, y = ~TOL100_50, type = 'scatter', mode = 'lines') %>%
+      layout(showlegend = FALSE,
+    yaxis = list(title = expression(paste("Sound Levels (125 Hz dB re 1", mu, " Pa/Hz)" )) ) )
+  })
+  fig <- subplot(plots, nrows = length(plots), shareX = TRUE, shareY = TRUE, titleY = TRUE)
+  annotations <- list()
+  for (i in seq_along(plots)) {
+    annotations[[i]] <- list(
+      x = 0, y = 1 - (i - 1) / length(plots),
+      text = paste("Year:", names(yearly_data)[i]),
+      xref = "paper", yref = "paper",
+      xanchor = "left", yanchor = "top",
+      showarrow = FALSE, font = list(size = 12)
+    )
+  }
+  fig=fig %>% layout(annotations = annotations)
+  fig
+  htmlwidgets::saveWidget(as_widget(fig), paste0(outDirG,"TS-test.html") )
   
   ## TIME SERIES - exceedence 100 Hz  ####
   cols_to_select = c("UTC", "windMag","wind_category", "Season", fqIn2)
@@ -667,7 +684,7 @@ for (uu in 1:length(ONMSsites)) {
   for ( ii in 1:length(yrs ) ) {
     idx = which(dailyFQ_complete$yr == yrs[ii])
     idx2 =  which(percentage_above$year == yrs[ii])
-    dailyFQ_complete$facet_title[idx] = paste0(yrs[ii], "- ", round(percentage_above$percentage_above[idx2]),"% above" )
+    dailyFQ_complete$facet_title[idx] = paste0(yrs[ii], "- ", round(percentage_above$percentage_above[idx2],1),"% above" )
   }
   
   TOIs = TOIs %>% filter(yr %in% unique(dailyFQ_complete$yr))
