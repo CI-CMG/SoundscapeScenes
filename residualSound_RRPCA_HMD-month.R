@@ -16,7 +16,7 @@ library(ggplot2)
 
 # PARAMS 
 fqr = 1001.2  # only process low frequency part of spectra
-exten = ".nc" #file extension
+exten = ".nc" # file extension
 DC = Sys.Date()
 
 # MM drive local
@@ -38,6 +38,9 @@ dirOut  = dirIn
 uDays = as.Date(sapply( strsplit(basename(inFiles), "_"), "[[", 5), format = "%Y%m%d")
 uMonths = as.Date(format(uDays, "%Y-%m-01"))
 files_by_month = split(inFiles, uMonths) 
+
+# Samara- does this work if you have more than one month in this file structure?
+# files_by_month = files_by_month[1] 
 
 #check column names
 all_files <- unlist(files_by_month, use.names = FALSE)
@@ -107,12 +110,14 @@ freqs = as.numeric(sub("HMD_", "", colnames(num_dat)))
 valid = !is.na(freqs)
 trunc_dat = num_dat[, valid & freqs <= fqr]
 pressure_dat = 10^(trunc_dat / 20)
-# monthly_rrpca = rrpca(pressure_dat)
 
-#setwd(dirIn)
-#saveRDS(monthly_rrpca, file = paste0(dirOut, "/RRPCA_monthly_", siteIn, "_", DC, ".rds"))
-
+#RRPCA METHOD------------------------------------------------------------------
+#after you run the RRPCA once save out the results and then uncomment the rrpca because it takes for ever
+monthly_rrpca = rrpca(pressure_dat)
+setwd(dirIn)
+saveRDS(monthly_rrpca, file = paste0(dirOut, "/RRPCA_monthly_", siteIn, "_", DC, ".rds"))
 monthly_rrpca = readRDS( paste0(dirIn, "/RRPCA_monthly_PMEL_AK_202009_NRS01_2026-04-23.rds") )
+# separate output of the RRPCA results
 L   = monthly_rrpca$L
 S   = monthly_rrpca$S
 err = monthly_rrpca$err
