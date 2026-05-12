@@ -2,6 +2,9 @@
 # Soundscape tool - 
 # (1) residual soundscape is the predictable part of the soundscape so the sensory conditions for a species/species group
 
+#devtools::install_github('TaikiSan21/PAMscapes')
+#library(devtools)
+
 rm(list=ls())
 library(PAMscapes)
 library(lubridate)
@@ -17,9 +20,11 @@ exten = ".nc" #file extension
 DC = Sys.Date()
 
 # MM drive local
-gdrive  = "C:/Users/mckenna/Documents/Data/"
+gdrive  = "C:/Users/megan/Documents/Data/" # "C:/Users/mckenna/Documents/Data/" # C:\Users\megan\Documents\Data
 siteIn  = "PMEL_AK_202009_NRS01" # site to process, change to the folder name
 dirIn   = paste0( gdrive, siteIn )
+MOI = "2021-07"
+
 # SH drive MAKARA
 #siteIn = "PMEL_AK"
 #gdrive = paste0( "W:/DETECTOR_OUTPUT/PYTHON_SOUNDSCAPE_PYPAM/",siteIn,"/") #nmfs GCP HMD netCDFs
@@ -62,7 +67,6 @@ missing_required <- sapply(col_list, function(x)
 all_files[missing_required]
 
 #combine monthly data
-
 all_monthly_data <- rbindlist(
   
   lapply(names(files_by_month), function(m) {
@@ -95,52 +99,152 @@ all_monthly_data <- rbindlist(
   fill = TRUE
 )
 
-#all_monthly_data$file
 
+#all_monthly_data
+df = as.data.frame(all_monthly_data)
+num_dat = df[, sapply(df, is.numeric)] #numeric data
+freqs = as.numeric(sub("HMD_", "", colnames(num_dat)))
+valid = !is.na(freqs)
+trunc_dat = num_dat[, valid & freqs <= fqr]
+pressure_dat = 10^(trunc_dat / 20)
+# monthly_rrpca = rrpca(pressure_dat)
 
-# Run RRPCA on each month- 
-monthly_rrpca = lapply(monthly_data, function(dat) {
-  
-  # numeric only
-  num_dat = dat[, sapply(dat, is.numeric)]
-  
-  # truncate by frequency
-  freqs = as.numeric(colnames(num_dat))
-  valid = !is.na(freqs)
-  trunc_dat = num_dat[, valid & freqs <= fqr]
-  
-  # convert to pressure
-  pressure_dat = 10^(trunc_dat / 20)
-  
-  # run rrpca
-  rrpca(pressure_dat)
-})
+#setwd(dirIn)
+#saveRDS(monthly_rrpca, file = paste0(dirOut, "/RRPCA_monthly_", siteIn, "_", DC, ".rds"))
 
-#Make a Spectrogram of monthly Low rank matrix
-MOI = "2021-01"
-L   = monthly_rrpca[[MOI]]$L
-utc = monthly_rrpca[[MOI]]$UTC
-freqs = monthly_rrpca[[MOI]]$freqs
+monthly_rrpca = readRDS( paste0(dirIn, "/RRPCA_monthly_PMEL_AK_202009_NRS01_2026-04-23.rds") )
+L   = monthly_rrpca$L
+S   = monthly_rrpca$S
+err = monthly_rrpca$err
+L = as.data.frame(L)
 
-df_long=melt(L)
-colnames(df_long) = c("time_idx", "freq_idx", "value")
-df_long$value = 20 * log10(df_long$value) 
-df_long$UTC = utc[df_long$time_idx]
-df_long$freq = freqs[df_long$freq_idx]
+#PERCENTILES LOW RANK ----------------------------------------------------------------------
+percentiles = as.data.frame( apply(L, 2, quantile, probs = c(0.25, 0.50, 0.75), na.rm = TRUE) )
+L50low = 20 * log10(percentiles) # convert back to dB 
+L50low2 = L50low %>%
+  as.data.frame() %>%
+  rownames_to_column("percentile") #add column with percentile value
+# rename ONLY frequency columns
+colnames(L50low2)[-1] <- freqs
+df_longL <- L50low2 %>%
+  pivot_longer(
+    cols = -percentile,
+    names_to = "frequency",
+    values_to = "value"
+  )
 
-ggplot(df_long, aes(x = UTC, y = freq, fill = value)) +
-  geom_tile() +
-  scale_y_log10() + 
-  scale_fill_viridis_c(limits = c(60, 120), oob = scales::squish) + # control dynamic range
-  labs(title = paste0("Low-Rank Spectrogram (L)-", MOI),
-       x = "Time", y = "Frequency (Hz)", fill = "Pressure") +
+df_longL$frequency <- as.numeric(sub("HMD_", "", df_longL$frequency) )
+
+# PERCENTILES OF LOW RANK
+pL = ggplot(df_longL,
+       aes(x = frequency,
+           y = value,
+           color = percentile,
+           group = percentile)) +
+  geom_line(linewidth = 1.2) +
+  scale_x_log10() +
+  labs(
+    title = "LOW RANK PERCENTILES",
+    x = "Frequency (Hz)",
+    y = "Sound Level",
+    color = "Percentile"
+  ) +
+  theme_minimal()
+#PERCENTILES END ----------------------------------------------------------------------
+
+#SPECTROGRAM ----------------------------------------------------------------------
+#df_long = melt(L)
+#colnames(df_long) = c("time_idx", "freq_idx", "value")
+#df_long$value = 20 * log10(df_long$value) # convert back to dB 
+#need to convert the index for time and frequency to actual values
+#df_long$UTC   = seq(as.POSIXct("2020-07-01 00:00:00", tz = "UTC"),
+                  # by = "1 min", length.out = length( unique(df_long$time_idx) ))
+#df_long$freq  = freqs[df_long$freq_idx]
+
+#Make a spectrogram of monthly low rank matrix
+# ggplot(df_long, aes(x = UTC, y = freq, fill = value)) +
+#   geom_tile() +
+#   scale_y_log10() + 
+#   scale_fill_viridis_c(limits = c(60, 120), oob = scales::squish) + # control dynamic range
+#   labs(title = paste0("Low-Rank Spectrogram (L)-", MOI),
+#        x = "Time", y = "Frequency (Hz)", fill = "Pressure") +
+#   theme_minimal()
+# # weird banding.... need to blend tiles?
+#SPECTROGRAM END ----------------------------------------------------------------------
+
+# PERCENTILES OF SOUND LEVELS ----------------------------------------------------------------------
+#plot with percentiles and median Low rank result - 
+trunc_datP = 10^(trunc_dat / 20)
+percentiles = as.data.frame( apply(trunc_datP, 2, quantile, probs = c(0.25, 0.50, 0.75), na.rm = TRUE) )
+df2 = 20 * log10(percentiles) # convert back to dB 
+df <- df2 %>%
+  as.data.frame() %>%
+  rownames_to_column("percentile")
+colnames(df)[-1] <- freqs
+df_long <- df %>%
+  pivot_longer(
+    cols = -percentile,
+    names_to = "frequency",
+    values_to = "value"
+  )
+df_long$frequency <- as.numeric(sub("HMD_", "", df_long$frequency) ) #as.numeric(df_long$frequency)
+pP = ggplot(df_long,
+       aes(x = frequency,
+           y = value,
+           color = percentile,
+           group = percentile)) +
+  geom_line(linewidth = 1.2) +
+  scale_x_log10() +
+  labs(
+    title = "SOUND LEVEL PERCENTILES",
+    x = "Frequency (Hz)",
+    y = "Sound Level",
+    color = "Percentile"
+  )+
   theme_minimal()
 
+library(gridExtra)
+grid.arrange(pL, pP, nrow = 1)
+
+
+library(patchwork)
+(pP + pL) +
+  plot_annotation(title = "Soundscape Percentile Comparison")
+
+
+df_long$type  <- "Sound Level Percentiles"
+df_longL$type <- "Low Rank Percentiles"
+df_all <- bind_rows(df_long, df_longL)
+scale_color_grey()
+ggplot(df_all,
+       aes(x = frequency,
+           y = value,
+           color = percentile,
+           linetype = type,
+           group = interaction(percentile, type))) +
+  geom_line(linewidth = 1.2) +
+  scale_color_manual(
+    values = c(
+      "25%" = "grey60",
+      "50%" = "black",
+      "75%" = "grey60"
+    )
+  ) + 
+  # scale_color_grey(start = 0.1, end = 0.7) +
+  scale_x_log10() +
+  labs(
+    title = "Sound Level Percentile Comparison",
+    x = "Frequency (Hz)",
+    y = "Sound Level"
+  ) +
+  theme_minimal()
+
+# PERCENTILES OF SOUND LEVELS ----------------------------------------------------------------------
 # INTERPRET: going from qualitative to quantitative interpretations
 #Narrative: Rather than interpreting the proportion of energy explained by the low-rank component, 
-#we focus on how the low-rank structure evolves over time and where the sparse component 
-#introduces meaningful deviations, particularly at higher percentiles and during transient events.
-#RRPCA: What portion of the soundscape is persistent and structured versus transient and event-driven?
+# we focus on how the low-rank structure evolves over time and where the sparse component 
+# introduces meaningful deviations, particularly at higher percentiles and during transient events.
+# RRPCA: What portion of the soundscape is persistent and structured versus transient and event-driven?
 # low rank -- anything predictable, repeating, or slowly varying
 # sparse -- anything rare, abrupt, or high-intensity relative to background
 
@@ -172,16 +276,29 @@ mean(event_dominant)
 
 # How do I beark it into less arbirtray 
 
-rolling mean of L trend over 6 hours
+#rolling mean of L trend over 6 hours
 
 
 
+# previous  code #### -----------------------------------------
 
-
-
-
-
-# previous  code -----------------------------------------
+# Run RRPCA on each month (only if lots of data) 
+monthly_rrpca = lapply(df, function(dat) {
+  
+  # numeric only
+  num_dat = dat[, sapply(dat, is.numeric)]
+  
+  # truncate by frequency
+  freqs = as.numeric(colnames(num_dat))
+  valid = !is.na(freqs)
+  trunc_dat = num_dat[, valid & freqs <= fqr]
+  
+  # convert to pressure
+  pressure_dat = 10^(trunc_dat / 20)
+  
+  # run rrpca
+  rrpca(pressure_dat)
+})
 
 RRPCAsumOUT = NULL # summary of percentiles for each site
 # LOOP through sites ####
