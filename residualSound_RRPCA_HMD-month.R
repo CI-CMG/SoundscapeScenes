@@ -126,11 +126,11 @@ L = as.data.frame(L)
 #PERCENTILES LOW RANK ----------------------------------------------------------------------
 percentiles = as.data.frame( apply(L, 2, quantile, probs = c(0.25, 0.50, 0.75), na.rm = TRUE) )
 L50low = 20 * log10(percentiles) # convert back to dB 
-L50low2 = L50low %>%
-  as.data.frame() %>%
+L50low2 = L50low %>% as.data.frame() %>%
   rownames_to_column("percentile") #add column with percentile value
-# rename ONLY frequency columns
-colnames(L50low2)[-1] <- freqs
+
+
+colnames(L50low2)[-1] <- freqs # rename ONLY frequency columns
 df_longL <- L50low2 %>%
   pivot_longer(
     cols = -percentile,
@@ -139,6 +139,7 @@ df_longL <- L50low2 %>%
   )
 
 df_longL$frequency <- as.numeric(sub("HMD_", "", df_longL$frequency) )
+
 
 # PERCENTILES OF LOW RANK
 pL = ggplot(df_longL,
@@ -207,6 +208,8 @@ pP = ggplot(df_long,
     color = "Percentile"
   )+
   theme_minimal()
+
+saveRDS(df_long, file = paste0(dirOut, "/RRPCA_OrigPercentilesMonthly_", siteIn, "_", DC, ".rds"))
 
 library(gridExtra)
 grid.arrange(pL, pP, nrow = 1)
