@@ -54,3 +54,36 @@ pL = ggplot(df_longL,
   ) +
   theme_minimal()
 pL
+
+
+df_long = readRDS( inFiles [2])
+df_longL$frequency = df_long$frequency
+
+df_longL$type <- "Low Rank Percentiles"
+df_long$type  <- "Sound Level Percentiles"
+
+
+df_all <- bind_rows(df_long, df_longL)
+scale_color_grey()
+ggplot(df_all,
+       aes(x = frequency,
+           y = value,
+           color = percentile,
+           linetype = type,
+           group = interaction(percentile, type))) +
+  geom_line(linewidth = 1.2) +
+  scale_color_manual(
+    values = c(
+      "25%" = "grey60",
+      "50%" = "black",
+      "75%" = "grey60"
+    )
+  ) + 
+  # scale_color_grey(start = 0.1, end = 0.7) +
+  scale_x_log10() +
+  labs(
+    title = "Sound Level Percentile Comparison",
+    x = "Frequency (Hz)",
+    y = "Sound Level"
+  ) +
+  theme_minimal()
