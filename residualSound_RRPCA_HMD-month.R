@@ -204,7 +204,7 @@ pP = ggplot(df_long,
   labs(
     title = "SOUND LEVEL PERCENTILES",
     x = "Frequency (Hz)",
-    y = "Sound Level",
+    y = "Sound Level dB re 1 µPa²/Hz",
     color = "Percentile"
   )+
   theme_minimal()

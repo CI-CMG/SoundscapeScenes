@@ -4,17 +4,25 @@ rm(list=ls())
 library(ggplot2)
 library(tidyverse)
 
-freqs = 100:797
-
 dirIn = choose.dir()
 setwd(dirIn)
 inFiles = list.files(pattern = ".rds")
 
+parts = NULL
+for (f in seq_along(inFiles)) {
+  parts[[f]] <- strsplit(inFiles[f], "_")[[1]] }
+
+
 f = 1
+f2 = 2
+
 monthly_rrpca = readRDS( inFiles [f])
+df_long = readRDS( inFiles [f2])
+df_long$frequency = as.numeric( df_long$frequency )
+
 parts <- strsplit(inFiles [f], "_")[[1]]
-site = parts[4]
-month = as.Date( gsub(".rds", "", parts[5]) )
+site = parts[6]
+mth = ( parts[5])
 L   = monthly_rrpca$L
 S   = monthly_rrpca$S
 err = monthly_rrpca$err
@@ -27,7 +35,9 @@ L50low2 = L50low %>%
   as.data.frame() %>%
   rownames_to_column("percentile") #add column with percentile value
 
+
 # rename ONLY frequency columns
+freqs = df_long$frequency
 colnames(L50low2)[-1] <- freqs
 df_longL <- L50low2 %>%
   pivot_longer(
@@ -35,35 +45,14 @@ df_longL <- L50low2 %>%
     names_to = "frequency",
     values_to = "value"
   )
+df_longL$frequency = as.numeric( df_longL$frequency )
 
-df_longL$frequency <- as.numeric(df_longL$frequency)
-                                     
-# PERCENTILES OF LOW RANK
-pL = ggplot(df_longL,
-       aes(x = frequency,
-           y = value,
-           color = percentile,
-           group = percentile)) +
-  geom_line(linewidth = 1.2) +
-  scale_x_log10() +
-  labs(
-    title = "LOW RANK PERCENTILES",
-    x = "Frequency (Hz)",
-    y = "Sound Level",
-    color = "Percentile"
-  ) +
-  theme_minimal()
-pL
-
-
-df_long = readRDS( inFiles [2])
-df_longL$frequency = df_long$frequency
-
+#PLOT______________________________________________________________________
 df_longL$type <- "Low Rank Percentiles"
 df_long$type  <- "Sound Level Percentiles"
 
-
 df_all <- bind_rows(df_long, df_longL)
+
 scale_color_grey()
 ggplot(df_all,
        aes(x = frequency,
@@ -82,8 +71,30 @@ ggplot(df_all,
   # scale_color_grey(start = 0.1, end = 0.7) +
   scale_x_log10() +
   labs(
-    title = "Sound Level Percentile Comparison",
+    title = "", # "Sound Level Percentile Comparison",
     x = "Frequency (Hz)",
-    y = "Sound Level"
+    y = "Sound Level dB re 1 µPa²/Hz",
+    caption = paste0(site, " ", mth )
   ) +
-  theme_minimal()
+  theme_minimal((base_size = 16))+ 
+  theme(legend.position = "none")
+ 
+
+
+
+#difference between SL - LR---------------------------------------------------------------
+# positive means that SL is higher
+df_cbind <- bind_cols(df_long, df_longL)
+df_cbind$df_diff =  df_cbind$value...3 - df_cbind$value...7
+df50 = df_cbind[ df_cbind$percentile...5 == "75%",]
+ggplot(df50, aes(x = df_diff))+
+  geom_histogram(bins = 30) +
+  xlim(-1,1)+
+  labs(
+    x = "dB above residual soundscape (median)",
+    y = "",
+    caption = paste0(site, " ", mth )
+  ) +
+  theme_minimal((base_size = 16))
+
+AK01 = df_cbind
