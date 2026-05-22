@@ -63,9 +63,9 @@ ggplot(df_all,
   geom_line(linewidth = 1.2) +
   scale_color_manual(
     values = c(
-      "25%" = "grey60",
-      "50%" = "black",
-      "75%" = "grey60"
+      "25%" = "orange",
+      "50%" = "blue",
+      "75%" = "pink"
     )
   ) + 
   # scale_color_grey(start = 0.1, end = 0.7) +
